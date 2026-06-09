@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>포켓몬GO 거래 관리</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .tab-btn { color: #6b7280; border-bottom: 2px solid transparent; transition: all .2s; }
+    .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+    .card-photo { transition: opacity .2s; }
+    .card-photo:hover { opacity: .85; }
+    input[type=number]::-webkit-inner-spin-button { opacity: 1; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800">
+
+  <!-- ── 헤더 / 탭 ── -->
+  <div class="bg-white shadow-sm sticky top-0 z-20">
+    <div class="max-w-3xl mx-auto px-3">
+      <h1 class="text-lg font-extrabold text-center pt-3 pb-1 tracking-tight text-blue-700">⚡ 포켓몬GO 거래 관리</h1>
+      <div class="flex">
+        <button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn active flex-1 py-2.5 text-sm font-semibold">📦 재고</button>
+        <button onclick="switchTab('ledger')"    id="tab-ledger"    class="tab-btn flex-1 py-2.5 text-sm font-semibold">📒 장부</button>
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn flex-1 py-2.5 text-sm font-semibold">📊 대시보드</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 재고 탭 ── -->
+  <div id="section-inventory" class="section max-w-3xl mx-auto px-3 py-4">
+    <div id="inventory-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-2.5"></div>
+  </div>
+
+  <!-- ── 장부 탭 ── -->
+  <div id="section-ledger" class="section hidden max-w-3xl mx-auto px-3 py-4 space-y-3">
+
+    <!-- 합계 바 -->
+    <div class="bg-white rounded-xl shadow p-3 flex justify-between items-center flex-wrap gap-2 text-sm">
+      <span class="text-gray-500">판매수익 <span id="ledger-sales" class="font-bold text-green-600">0</span>만원</span>
+      <span class="text-gray-500">투자금액 <span id="ledger-invest" class="font-bold text-red-500">0</span>만원</span>
+      <span class="font-bold">실현손익 <span id="ledger-pnl" class="text-blue-700">0</span>만원</span>
+    </div>
+
+    <!-- 입력 폼 -->
+    <div class="bg-white rounded-xl shadow p-4 space-y-2">
+      <p class="font-bold text-sm mb-1">거래 입력</p>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="flex flex-col gap-0.5">
+          <label class="text-xs text-gray-500">날짜</label>
+          <input type="date" id="form-date" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <label class="text-xs text-gray-500">구분</label>
+          <select id="form-type" class="border rounded-lg px-2 py-1.5 text-sm w-full bg-white">
+            <option value="투자">투자</option>
+            <option value="판매">판매</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="flex flex-col gap-0.5">
+          <label class="text-xs text-gray-500">품목</label>
+          <select id="form-item" class="border rounded-lg px-2 py-1.5 text-sm w-full bg-white"></select>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <label class="text-xs text-gray-500">금액 (만원)</label>
+          <input type="number" id="form-amount" min="0" step="0.1" placeholder="0" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+        </div>
+      </div>
+      <div class="flex flex-col gap-0.5">
+        <label class="text-xs text-gray-500">메모</label>
+        <input type="text" id="form-memo" placeholder="메모 (선택)" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+      </div>
+      <button onclick="addEntry()" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-bold mt-1">저장</button>
+    </div>
+
+    <!-- 거래 테이블 -->
+    <div class="bg-white rounded-xl shadow overflow-x-auto">
+      <table class="w-full text-xs min-w-[420px]">
+        <thead class="bg-gray-50 text-gray-500 uppercase text-[11px]">
+          <tr>
+            <th class="px-3 py-2 text-left">날짜</th>
+            <th class="px-2 py-2 text-left">구분</th>
+            <th class="px-2 py-2 text-left">품목</th>
+            <th class="px-2 py-2 text-right">금액</th>
+            <th class="px-2 py-2 text-left">메모</th>
+            <th class="px-2 py-2"></th>
+          </tr>
+        </thead>
+        <tbody id="ledger-tbody" class="divide-y divide-gray-100"></tbody>
+      </table>
+      <p id="ledger-empty" class="text-center text-gray-400 py-6 text-sm hidden">거래 내역이 없습니다.</p>
+    </div>
+  </div>
+
+  <!-- ── 대시보드 탭 ── -->
+  <div id="section-dashboard" class="section hidden max-w-3xl mx-auto px-3 py-4 space-y-4">
+
+    <!-- 요약 카드 4개 -->
+    <div class="grid grid-cols-2 gap-3">
+      <div class="bg-white rounded-xl shadow p-3 text-center">
+        <p class="text-xs text-gray-400 mb-0.5">총보유수량</p>
+        <p id="dash-qty" class="text-3xl font-extrabold text-blue-700">0</p>
+        <p class="text-xs text-gray-400">마리</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-3 text-center">
+        <p class="text-xs text-gray-400 mb-0.5">판매수익</p>
+        <p id="dash-sales" class="text-3xl font-extrabold text-green-600">0</p>
+        <p class="text-xs text-gray-400">만원</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-3 text-center">
+        <p class="text-xs text-gray-400 mb-0.5">투자금액</p>
+        <p id="dash-invest" class="text-3xl font-extrabold text-red-500">0</p>
+        <p class="text-xs text-gray-400">만원</p>
+      </div>
+      <div class="bg-white rounded-xl shadow p-3 text-center">
+        <p class="text-xs text-gray-400 mb-0.5">실현손익</p>
+        <p id="dash-pnl" class="text-3xl font-extrabold text-gray-700">0</p>
+        <p class="text-xs text-gray-400">만원</p>
+      </div>
+    </div>
+
+    <!-- 보유자산가치 -->
+    <div class="bg-white rounded-xl shadow p-4 flex items-center justify-between">
+      <div>
+        <p class="text-xs text-gray-400">보유자산가치 (시세 기준)</p>
+        <p id="dash-asset" class="text-2xl font-extrabold text-purple-700 mt-0.5">0만원</p>
+      </div>
+      <div class="text-right text-xs text-gray-400 leading-5">
+        <div>도쿄 <span class="font-semibold text-gray-600">3.5만</span></div>
+        <div>시카고 <span class="font-semibold text-gray-600">5.0만</span></div>
+        <div>일반 <span class="font-semibold text-gray-600">1.5만</span></div>
+      </div>
+    </div>
+
+    <!-- 차트 2개 -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="bg-white rounded-xl shadow p-4">
+        <p class="text-sm font-bold text-center mb-2">보유 종별 비율</p>
+        <div class="relative" style="max-height:220px"><canvas id="chart-holdings"></canvas></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4">
+        <p class="text-sm font-bold text-center mb-2">투자 사용처 비율 (품목별)</p>
+        <div class="relative" style="max-height:220px"><canvas id="chart-invest"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ── 상수 ── */
+    const SPECIES     = ['뮤츠', '가이오가', '그란돈', '썬더'];
+    const BACKGROUNDS = ['도쿄', '시카고', '일반'];
+    const PRICES      = { '도쿄': 3.5, '시카고': 5.0, '일반': 1.5 };
+    const SPECIES_EMOJI = { '뮤츠': '🟣', '가이오가': '🔵', '그란돈': '🔴', '썬더': '🟡' };
+    const ITEMS = [];
+    SPECIES.forEach(s => BACKGROUNDS.forEach(b => ITEMS.push(`${s}_${b}`)));
+
+    /* ── 상태 ── */
+    let inventory = {};
+    let ledger    = [];
+    let chartHoldings = null;
+    let chartInvest   = null;
+
+    /* ── localStorage ── */
+    function loadData() {
+      try {
+        const inv = localStorage.getItem('inventory');
+        if (inv) inventory = JSON.parse(inv);
+        const led = localStorage.getItem('ledger');
+        if (led) ledger = JSON.parse(led);
+      } catch(e) { console.warn('localStorage 로드 실패', e); }
+      ITEMS.forEach(k => { if (!inventory[k]) inventory[k] = { qty: 0, photo: '' }; });
+    }
+    const saveInventory = () => { try { localStorage.setItem('inventory', JSON.stringify(inventory)); } catch(e) { alert('저장 공간이 부족합니다 (사진 용량 초과 가능성).'); } };
+    const saveLedger    = () => localStorage.setItem('ledger', JSON.stringify(ledger));
+
+    /* ── 탭 전환 ── */
+    function switchTab(tab) {
+      document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`section-${tab}`).classList.remove('hidden');
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      if (tab === 'dashboard') renderDashboard();
+    }
+
+    /* ══════════════════════════════
+       재고
+    ══════════════════════════════ */
+    function renderInventory() {
+      const grid = document.getElementById('inventory-grid');
+      grid.innerHTML = '';
+      ITEMS.forEach(key => {
+        const [species, bg] = key.split('_');
+        const item = inventory[key];
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-xl shadow flex flex-col items-center p-2 gap-1.5';
+
+        /* 사진 */
+        const photoWrap = document.createElement('div');
+        photoWrap.className = 'card-photo w-full aspect-square rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer relative';
+
+        if (item.photo) {
+          const img = document.createElement('img');
+          img.src = item.photo;
+          img.className = 'w-full h-full object-cover';
+          photoWrap.appendChild(img);
+        } else {
+          const ph = document.createElement('div');
+          ph.className = 'flex flex-col items-center text-gray-400';
+          ph.innerHTML = `<span class="text-2xl">${SPECIES_EMOJI[species] || '📷'}</span><span class="text-[10px] mt-0.5">사진 추가</span>`;
+          photoWrap.appendChild(ph);
+        }
+
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.className = 'hidden';
+		fileInput.onchange = e => {
+		const file = e.target.files[0];
+		if (!file) return;
+		const img = new Image();
+		img.onload = () => {
+			const max = 800;
+			let {width, height} = img;
+			if (width > height && width > max) { height *= max/width; width = max; }
+			else if (height > max) { width *= max/height; height = max; }
+			const canvas = document.createElement('canvas');
+			canvas.width = width; canvas.height = height;
+			canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+			inventory[key].photo = canvas.toDataURL('image/jpeg', 0.8);
+			saveInventory(); renderInventory();
+		};
+		img.src = URL.createObjectURL(file);
+		};
+
+        /* 수량 컨트롤 */
+        const qtyRow = document.createElement('div');
+        qtyRow.className = 'flex items-center gap-1';
+
+        const btnM = document.createElement('button');
+        btnM.textContent = '−';
+        btnM.className = 'w-6 h-6 rounded-full bg-gray-200 text-gray-600 font-bold text-sm leading-none';
+        btnM.onclick = () => changeQty(key, -1);
+
+        const qtyInput = document.createElement('input');
+        qtyInput.type = 'number'; qtyInput.min = 0;
+        qtyInput.value = item.qty;
+        qtyInput.id = `qty-${key}`;
+        qtyInput.className = 'w-9 text-center border rounded text-sm py-0.5';
+        qtyInput.onchange = e => { inventory[key].qty = Math.max(0, parseInt(e.target.value) || 0); saveInventory(); };
+
+        const btnP = document.createElement('button');
+        btnP.textContent = '+';
+        btnP.className = 'w-6 h-6 rounded-full bg-blue-500 text-white font-bold text-sm leading-none';
+        btnP.onclick = () => changeQty(key, 1);
+
+        qtyRow.append(btnM, qtyInput, btnP);
+        card.append(photoWrap, label, qtyRow);
+        grid.appendChild(card);
+      });
+    }
+
+    function changeQty(key, delta) {
+      inventory[key].qty = Math.max(0, (inventory[key].qty || 0) + delta);
+      const el = document.getElementById(`qty-${key}`);
+      if (el) el.value = inventory[key].qty;
+      saveInventory();
+    }
+
+    /* ══════════════════════════════
+       장부
+    ══════════════════════════════ */
+    function initLedgerForm() {
+      const d = new Date();
+      document.getElementById('form-date').value =
+        `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+      const sel = document.getElementById('form-item');
+      sel.innerHTML = '';
+      ITEMS.forEach(k => {
+        const [s, b] = k.split('_');
+        const opt = document.createElement('option');
+        opt.value = k; opt.textContent = `${s} (${b})`;
+        sel.appendChild(opt);
+      });
+    }
+
+    function addEntry() {
+      const date   = document.getElementById('form-date').value;
+      const type   = document.getElementById('form-type').value;
+      const item   = document.getElementById('form-item').value;
+      const raw    = parseFloat(document.getElementById('form-amount').value);
+      const memo   = document.getElementById('form-memo').value.trim();
+
+      if (!date)       { alert('날짜를 입력해주세요.'); return; }
+      if (!raw || raw <= 0) { alert('금액을 입력해주세요.'); return; }
+
+      const amount = type === '투자' ? -Math.abs(raw) : Math.abs(raw);
+      ledger.push({ id: Date.now().toString(), date, type, item, amount, memo });
+      saveLedger();
+
+      if (type === '판매') {
+        inventory[item].qty = Math.max(0, (inventory[item].qty || 0) - 1);
+        saveInventory();
+        const el = document.getElementById(`qty-${item}`);
+        if (el) el.value = inventory[item].qty;
+      }
+
+      document.getElementById('form-amount').value = '';
+      document.getElementById('form-memo').value   = '';
+      renderLedger();
+    }
+
+    function deleteEntry(id) {
+      if (!confirm('이 거래를 삭제하시겠습니까?')) return;
+      ledger = ledger.filter(e => e.id !== id);
+      saveLedger();
+      renderLedger();
+    }
+
+    function renderLedger() {
+      let sales = 0, invest = 0;
+      ledger.forEach(e => { if (e.type === '판매') sales += e.amount; else invest += e.amount; });
+      const pnl = sales + invest;
+
+      document.getElementById('ledger-sales').textContent  = sales.toFixed(1);
+      document.getElementById('ledger-invest').textContent = Math.abs(invest).toFixed(1);
+      const pnlEl = document.getElementById('ledger-pnl');
+      pnlEl.textContent = pnl.toFixed(1);
+      pnlEl.className   = pnl >= 0 ? 'font-bold text-green-600' : 'font-bold text-red-500';
+
+      const tbody = document.getElementById('ledger-tbody');
+      const empty = document.getElementById('ledger-empty');
+      tbody.innerHTML = '';
+
+      const sorted = [...ledger].sort((a, b) => b.date.localeCompare(a.date));
+      if (sorted.length === 0) { empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+
+      sorted.forEach(e => {
+        const [species, bg] = e.item.split('_');
+        const sign     = e.type === '투자' ? '-' : '+';
+        const amtStr   = `${sign}${Math.abs(e.amount).toFixed(1)}만`;
+        const amtClass = e.type === '투자' ? 'text-red-500' : 'text-green-600';
+        const badgeCls = e.type === '판매'
+          ? 'bg-green-100 text-green-700'
+          : 'bg-red-100 text-red-600';
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50';
+        tr.innerHTML = `
+          <td class="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">${e.date}</td>
+          <td class="px-2 py-2"><span class="px-1.5 py-0.5 rounded-full text-[11px] font-semibold ${badgeCls}">${e.type}</span></td>
+          <td class="px-2 py-2 text-xs font-medium">${species}<span class="text-gray-400"> · ${bg}</span></td>
+          <td class="px-2 py-2 text-xs text-right font-bold ${amtClass} whitespace-nowrap">${amtStr}</td>
+          <td class="px-2 py-2 text-xs text-gray-500 max-w-[80px] truncate">${e.memo || '—'}</td>
+          <td class="px-2 py-2 text-right">
+            <button onclick="deleteEntry('${e.id}')" class="text-gray-300 hover:text-red-500 text-sm font-bold leading-none">✕</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* ══════════════════════════════
+       대시보드
+    ══════════════════════════════ */
+    function renderDashboard() {
+      let totalQty = 0, sales = 0, invest = 0;
+      ITEMS.forEach(k => { totalQty += inventory[k].qty || 0; });
+      ledger.forEach(e => { if (e.type === '판매') sales += e.amount; else invest += e.amount; });
+      const pnl = sales + invest;
+
+      let assetVal = 0;
+      ITEMS.forEach(k => {
+        const [, bg] = k.split('_');
+        assetVal += (inventory[k].qty || 0) * PRICES[bg];
+      });
+
+      document.getElementById('dash-qty').textContent   = totalQty;
+      document.getElementById('dash-sales').textContent = sales.toFixed(1);
+      document.getElementById('dash-invest').textContent = Math.abs(invest).toFixed(1);
+      document.getElementById('dash-asset').textContent  = `${assetVal.toFixed(1)}만원`;
+
+      const pnlEl = document.getElementById('dash-pnl');
+      pnlEl.textContent = pnl.toFixed(1);
+      pnlEl.className   = `text-3xl font-extrabold ${pnl >= 0 ? 'text-green-600' : 'text-red-500'}`;
+
+      /* 차트 1: 종별 보유 수량 */
+      const speciesQty = SPECIES.map(s =>
+        BACKGROUNDS.reduce((sum, b) => sum + (inventory[`${s}_${b}`]?.qty || 0), 0)
+      );
+      const PIE_COLORS = ['#818cf8','#22d3ee','#fb923c','#f472b6','#34d399','#fbbf24','#a78bfa','#60a5fa'];
+
+      if (chartHoldings) chartHoldings.destroy();
+      chartHoldings = new Chart(document.getElementById('chart-holdings'), {
+        type: 'pie',
+        data: {
+          labels: SPECIES,
+          datasets: [{ data: speciesQty, backgroundColor: PIE_COLORS.slice(0,4), borderWidth: 1 }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 8 } } }
+        }
+      });
+
+      /* 차트 2: 투자 품목별 */
+      const investMap = {};
+      ledger.filter(e => e.type === '투자').forEach(e => {
+        const [s, b] = e.item.split('_');
+        const lbl = `${s}(${b})`;
+        investMap[lbl] = (investMap[lbl] || 0) + Math.abs(e.amount);
+      });
+      const iLabels = Object.keys(investMap);
+      const iValues = Object.values(investMap);
+
+      if (chartInvest) chartInvest.destroy();
+      if (iLabels.length === 0) {
+        chartInvest = new Chart(document.getElementById('chart-invest'), {
+          type: 'pie',
+          data: { labels: ['투자 내역 없음'], datasets: [{ data: [1], backgroundColor: ['#e5e7eb'] }] },
+          options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+        });
+      } else {
+        chartInvest = new Chart(document.getElementById('chart-invest'), {
+          type: 'pie',
+          data: {
+            labels: iLabels,
+            datasets: [{ data: iValues, backgroundColor: PIE_COLORS.slice(0, iLabels.length), borderWidth: 1 }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 6 } } }
+          }
+        });
+      }
+    }
+
+    /* ── 초기화 ── */
+    loadData();
+    renderInventory();
+    initLedgerForm();
+    renderLedger();
+    switchTab('inventory');
+  </script>
+</body>
+</html>
