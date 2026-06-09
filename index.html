@@ -12,6 +12,7 @@
     .city-tab { background: #f3f4f6; color: #6b7280; transition: all .15s; }
     .city-tab.active { background: #2563eb; color: white; }
     input[type=number]::-webkit-inner-spin-button { opacity: 1; }
+    .cal-cell { min-height: 38px; }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800">
@@ -21,16 +22,16 @@
     <div class="max-w-3xl mx-auto px-3">
       <h1 class="text-lg font-extrabold text-center pt-3 pb-1 tracking-tight text-blue-700">⚡ 포켓몬GO 거래 관리</h1>
       <div class="flex">
-        <button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn active flex-1 py-2.5 text-sm font-semibold">📦 재고</button>
-        <button onclick="switchTab('ledger')"    id="tab-ledger"    class="tab-btn flex-1 py-2.5 text-sm font-semibold">📒 장부</button>
-        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn flex-1 py-2.5 text-sm font-semibold">📊 대시보드</button>
+        <button onclick="switchTab('inventory')"   id="tab-inventory"   class="tab-btn active flex-1 py-2.5 text-xs font-semibold">📦 재고</button>
+        <button onclick="switchTab('ledger')"      id="tab-ledger"      class="tab-btn flex-1 py-2.5 text-xs font-semibold">📒 장부</button>
+        <button onclick="switchTab('dashboard')"   id="tab-dashboard"   class="tab-btn flex-1 py-2.5 text-xs font-semibold">📊 대시보드</button>
+        <button onclick="switchTab('reservation')" id="tab-reservation" class="tab-btn flex-1 py-2.5 text-xs font-semibold">📅 예약</button>
       </div>
     </div>
   </div>
 
-  <!-- ── 재고 탭 ── -->
+  <!-- ══════════════ 재고 탭 ══════════════ -->
   <div id="section-inventory" class="section max-w-3xl mx-auto px-3 py-4">
-    <!-- 도시 서브탭 -->
     <div class="grid grid-cols-3 gap-1.5 mb-3">
       <button onclick="switchCity('도쿄')"     id="ctab-도쿄"     class="city-tab active rounded-xl py-2 text-sm font-semibold">🗼 도쿄</button>
       <button onclick="switchCity('시카고')"   id="ctab-시카고"   class="city-tab rounded-xl py-2 text-sm font-semibold">🌆 시카고</button>
@@ -39,16 +40,13 @@
     <div id="city-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
   </div>
 
-  <!-- ── 장부 탭 ── -->
+  <!-- ══════════════ 장부 탭 ══════════════ -->
   <div id="section-ledger" class="section hidden max-w-3xl mx-auto px-3 py-4 space-y-3">
-    <!-- 합계 바 -->
     <div class="bg-white rounded-xl shadow p-3 flex justify-between items-center flex-wrap gap-2 text-sm">
       <span class="text-gray-500">판매수익 <span id="ledger-sales" class="font-bold text-green-600">0</span>만원</span>
       <span class="text-gray-500">투자금액 <span id="ledger-invest" class="font-bold text-red-500">0</span>만원</span>
       <span class="font-bold">실현손익 <span id="ledger-pnl" class="text-blue-700">0</span>만원</span>
     </div>
-
-    <!-- 입력 폼 -->
     <div class="bg-white rounded-xl shadow p-4 space-y-2">
       <p class="font-bold text-sm mb-1">거래 입력</p>
       <div class="grid grid-cols-2 gap-2">
@@ -80,8 +78,6 @@
       </div>
       <button onclick="addEntry()" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-bold mt-1">저장</button>
     </div>
-
-    <!-- 거래 테이블 -->
     <div class="bg-white rounded-xl shadow overflow-x-auto">
       <table class="w-full text-xs min-w-[420px]">
         <thead class="bg-gray-50 text-gray-500 uppercase text-[11px]">
@@ -100,7 +96,7 @@
     </div>
   </div>
 
-  <!-- ── 대시보드 탭 ── -->
+  <!-- ══════════════ 대시보드 탭 ══════════════ -->
   <div id="section-dashboard" class="section hidden max-w-3xl mx-auto px-3 py-4 space-y-4">
     <div class="grid grid-cols-2 gap-3">
       <div class="bg-white rounded-xl shadow p-3 text-center">
@@ -124,7 +120,6 @@
         <p class="text-xs text-gray-400">만원</p>
       </div>
     </div>
-
     <div class="bg-white rounded-xl shadow p-4 flex items-center justify-between">
       <div>
         <p class="text-xs text-gray-400">보유자산가치 (시세 기준)</p>
@@ -136,7 +131,6 @@
         <div>코펜하겐 <span class="font-semibold text-gray-600">4.0만</span></div>
       </div>
     </div>
-
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="bg-white rounded-xl shadow p-4">
         <p class="text-sm font-bold text-center mb-2">도시별 보유 비율</p>
@@ -149,8 +143,101 @@
     </div>
   </div>
 
+  <!-- ══════════════ 예약 탭 ══════════════ -->
+  <div id="section-reservation" class="section hidden max-w-3xl mx-auto px-3 py-4 space-y-4">
+
+    <!-- 예약 추가 폼 -->
+    <div class="bg-white rounded-xl shadow p-4 space-y-2">
+      <p class="font-bold text-sm mb-1">예약 추가</p>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="flex flex-col gap-0.5">
+          <label class="text-xs text-gray-500">구매자</label>
+          <input type="text" id="res-buyer" placeholder="구매자 이름" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <label class="text-xs text-gray-500">플랫폼</label>
+          <select id="res-platform" class="border rounded-lg px-2 py-1.5 text-sm w-full bg-white">
+            <option value="당근">당근</option>
+            <option value="번개">번개장터</option>
+            <option value="중고">중고나라</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="flex flex-col gap-0.5">
+          <label class="text-xs text-gray-500">품목</label>
+          <select id="res-item" class="border rounded-lg px-2 py-1.5 text-sm w-full bg-white"></select>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <label class="text-xs text-gray-500">가격 (만원)</label>
+          <input type="number" id="res-price" min="0" step="0.1" placeholder="0" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="flex flex-col gap-0.5">
+          <label class="text-xs text-gray-500">계약금 (만원)</label>
+          <input type="number" id="res-deposit" min="0" step="0.1" placeholder="0" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <label class="text-xs text-gray-500">친구시작일</label>
+          <input type="date" id="res-friendStart" onchange="updateTradeDate()" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="flex flex-col gap-0.5">
+          <label class="text-xs text-gray-500">친구타입</label>
+          <select id="res-friendType" onchange="updateTradeDate()" class="border rounded-lg px-2 py-1.5 text-sm w-full bg-white">
+            <option value="">선택</option>
+            <option value="그레이트">그레이트 (+7일)</option>
+            <option value="울트라">울트라 (+30일)</option>
+            <option value="즉시">즉시 (오늘)</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <label class="text-xs text-gray-500">거래예정일 <span class="text-blue-500">(자동계산)</span></label>
+          <input type="date" id="res-tradeDate" class="border rounded-lg px-2 py-1.5 text-sm w-full bg-gray-50">
+        </div>
+      </div>
+      <div class="flex flex-col gap-0.5">
+        <label class="text-xs text-gray-500">메모</label>
+        <input type="text" id="res-notes" placeholder="메모 (선택)" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+      </div>
+      <button onclick="addReservation()" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-bold mt-1">예약 추가</button>
+    </div>
+
+    <!-- 달력 히트맵 -->
+    <div class="bg-white rounded-xl shadow p-3">
+      <p class="text-sm font-bold mb-2" id="cal-title">달력</p>
+      <div class="grid grid-cols-7 gap-0.5 mb-1">
+        <div class="text-center text-[11px] text-gray-400 font-medium py-0.5">월</div>
+        <div class="text-center text-[11px] text-gray-400 font-medium py-0.5">화</div>
+        <div class="text-center text-[11px] text-gray-400 font-medium py-0.5">수</div>
+        <div class="text-center text-[11px] text-gray-400 font-medium py-0.5">목</div>
+        <div class="text-center text-[11px] text-gray-400 font-medium py-0.5">금</div>
+        <div class="text-center text-[11px] text-blue-400 font-medium py-0.5">토</div>
+        <div class="text-center text-[11px] text-red-400 font-medium py-0.5">일</div>
+      </div>
+      <div id="cal-grid" class="grid grid-cols-7 gap-0.5"></div>
+      <div class="flex gap-3 mt-2 text-[10px] text-gray-400 justify-end">
+        <span><span style="display:inline-block;width:10px;height:10px;background:#f3f4f6;border-radius:2px;vertical-align:middle"></span> 0건</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:rgba(239,68,68,0.3);border-radius:2px;vertical-align:middle"></span> 1건</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:rgba(239,68,68,0.6);border-radius:2px;vertical-align:middle"></span> 2건+</span>
+      </div>
+    </div>
+
+    <!-- 임박 예약 리스트 -->
+    <div class="bg-white rounded-xl shadow p-3">
+      <p class="text-sm font-bold mb-2">📋 임박 예약 <span id="res-count" class="text-xs text-gray-400 font-normal ml-1"></span></p>
+      <div id="upcoming-list" class="divide-y divide-gray-100"></div>
+      <p id="upcoming-empty" class="text-center text-gray-400 py-4 text-sm hidden">활성 예약이 없습니다.</p>
+    </div>
+
+  </div><!-- /section-reservation -->
+
   <script>
-    /* ── 상수 ── */
+    /* ══════════════════════════════
+       상수
+    ══════════════════════════════ */
     const CITIES = {
       '도쿄':     ['뮤츠', '그란돈', '가이오가', '스이쿤', '프리져'],
       '시카고':   ['뮤', '그란돈', '가이오가', '라이코', '썬더'],
@@ -164,8 +251,8 @@
       '라이코': '⚡', '썬더': '🌩️',
       '앤테이': '🔥', '파이어': '🦅'
     };
+    const WEEK_DAYS = ['일','월','화','수','목','금','토'];
 
-    /* 카드 키: "종_도시" / 장부 아이템 키: "종_도시_이로치|일반" */
     const CARD_KEYS = [];
     const LEDGER_ITEMS = [];
     CITY_NAMES.forEach(city => {
@@ -176,25 +263,30 @@
       });
     });
 
-    /* ── 상태 ── */
+    /* ══════════════════════════════
+       상태
+    ══════════════════════════════ */
     let currentCity = '도쿄';
-    let inventory = {}, ledger = [];
+    let inventory = {}, ledger = [], reservations = [];
     let chartHoldings = null, chartInvest = null;
 
-    /* ── localStorage ── */
+    /* ══════════════════════════════
+       localStorage
+    ══════════════════════════════ */
     function loadData() {
       try {
         const inv = localStorage.getItem('inventory');
         if (inv) inventory = JSON.parse(inv);
         const led = localStorage.getItem('ledger');
         if (led) ledger = JSON.parse(led);
+        const res = localStorage.getItem('reservations');
+        if (res) reservations = JSON.parse(res);
       } catch(e) { console.warn('localStorage 로드 실패', e); }
 
       CARD_KEYS.forEach(k => {
         if (!inventory[k]) {
           inventory[k] = { shinyQty: 0, normalQty: 0, shinyPhoto: '', normalPhoto: '' };
         } else if (inventory[k].qty !== undefined) {
-          /* 구형 단일 qty 포맷 마이그레이션 */
           inventory[k] = {
             shinyQty: 0,
             normalQty: inventory[k].qty || 0,
@@ -207,20 +299,26 @@
 
     function saveInventory() {
       try { localStorage.setItem('inventory', JSON.stringify(inventory)); }
-      catch(e) { alert('저장 공간이 부족합니다. 사진을 줄여주세요.'); }
+      catch(e) { alert('저장 공간 부족. 사진을 줄여주세요.'); }
     }
-    const saveLedger = () => localStorage.setItem('ledger', JSON.stringify(ledger));
+    const saveLedger       = () => localStorage.setItem('ledger', JSON.stringify(ledger));
+    const saveReservations = () => localStorage.setItem('reservations', JSON.stringify(reservations));
 
-    /* ── 메인 탭 전환 ── */
+    /* ══════════════════════════════
+       탭 전환
+    ══════════════════════════════ */
     function switchTab(tab) {
       document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(`section-${tab}`).classList.remove('hidden');
       document.getElementById(`tab-${tab}`).classList.add('active');
-      if (tab === 'dashboard') renderDashboard();
+      if (tab === 'dashboard')   renderDashboard();
+      if (tab === 'reservation') renderReservations();
     }
 
-    /* ── 도시 서브탭 전환 ── */
+    /* ══════════════════════════════
+       도시 서브탭
+    ══════════════════════════════ */
     function switchCity(city) {
       currentCity = city;
       document.querySelectorAll('.city-tab').forEach(b => b.classList.remove('active'));
@@ -228,11 +326,12 @@
       renderCityCards();
     }
 
-    /* ── 재고 카드 렌더링 ── */
+    /* ══════════════════════════════
+       재고 카드
+    ══════════════════════════════ */
     function renderCityCards() {
       const grid = document.getElementById('city-grid');
       grid.innerHTML = '';
-
       CITIES[currentCity].forEach(species => {
         const cardKey = `${species}_${currentCity}`;
         if (!inventory[cardKey]) inventory[cardKey] = { shinyQty: 0, normalQty: 0, shinyPhoto: '', normalPhoto: '' };
@@ -247,11 +346,9 @@
         card.appendChild(header);
 
         card.appendChild(buildVariantRow(cardKey, item, true));
-
         const hr = document.createElement('div');
         hr.className = 'border-t border-gray-100 my-1.5';
         card.appendChild(hr);
-
         card.appendChild(buildVariantRow(cardKey, item, false));
         grid.appendChild(card);
       });
@@ -265,7 +362,6 @@
       const row = document.createElement('div');
       row.className = 'flex items-center gap-1.5';
 
-      /* 사진 썸네일 */
       const photoWrap = document.createElement('div');
       photoWrap.className = 'w-9 h-9 rounded-lg flex-shrink-0 overflow-hidden bg-gray-100 cursor-pointer flex items-center justify-center';
       if (photo) {
@@ -297,12 +393,10 @@
       photoWrap.appendChild(fileInput);
       photoWrap.onclick = () => fileInput.click();
 
-      /* 라벨 */
       const lbl = document.createElement('span');
       lbl.className = `text-[11px] flex-1 whitespace-nowrap ${isShiny ? 'text-purple-600 font-semibold' : 'text-gray-500'}`;
       lbl.textContent = isShiny ? '✨이로치' : '일반';
 
-      /* 수량 컨트롤 */
       const controls = document.createElement('div');
       controls.className = 'flex items-center gap-0.5';
 
@@ -338,12 +432,13 @@
       saveInventory();
     }
 
-    /* ── 장부 폼 초기화 ── */
+    /* ══════════════════════════════
+       장부
+    ══════════════════════════════ */
     function initLedgerForm() {
       const d = new Date();
       document.getElementById('form-date').value =
         `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-
       const sel = document.getElementById('form-item');
       sel.innerHTML = '';
       CITY_NAMES.forEach(city => {
@@ -361,14 +456,12 @@
       });
     }
 
-    /* ── 장부 항목 추가 ── */
     function addEntry() {
       const date  = document.getElementById('form-date').value;
       const type  = document.getElementById('form-type').value;
       const item  = document.getElementById('form-item').value;
       const raw   = parseFloat(document.getElementById('form-amount').value);
       const memo  = document.getElementById('form-memo').value.trim();
-
       if (!date)        { alert('날짜를 입력해주세요.'); return; }
       if (!raw || raw <= 0) { alert('금액을 입력해주세요.'); return; }
 
@@ -388,26 +481,21 @@
           if (el) el.value = inventory[cardKey][field];
         }
       }
-
       document.getElementById('form-amount').value = '';
       document.getElementById('form-memo').value   = '';
       renderLedger();
     }
 
-    /* ── 장부 항목 삭제 ── */
     function deleteEntry(id) {
       if (!confirm('이 거래를 삭제하시겠습니까?')) return;
       ledger = ledger.filter(e => e.id !== id);
-      saveLedger();
-      renderLedger();
+      saveLedger(); renderLedger();
     }
 
-    /* ── 장부 렌더링 ── */
     function renderLedger() {
       let sales = 0, invest = 0;
       ledger.forEach(e => { if (e.type === '판매') sales += e.amount; else invest += e.amount; });
       const pnl = sales + invest;
-
       document.getElementById('ledger-sales').textContent  = sales.toFixed(1);
       document.getElementById('ledger-invest').textContent = Math.abs(invest).toFixed(1);
       const pnlEl = document.getElementById('ledger-pnl');
@@ -417,13 +505,12 @@
       const tbody = document.getElementById('ledger-tbody');
       const empty = document.getElementById('ledger-empty');
       tbody.innerHTML = '';
-
       const sorted = [...ledger].sort((a, b) => b.date.localeCompare(a.date));
       if (sorted.length === 0) { empty.classList.remove('hidden'); return; }
       empty.classList.add('hidden');
 
       sorted.forEach(e => {
-        const parts   = e.item.split('_');
+        const parts = e.item.split('_');
         const species = parts[0], city = parts[1], variant = parts[2] || '';
         const variantHtml = variant === '이로치' ? ' <span class="text-purple-500 text-[10px]">✨이로치</span>'
                           : variant === '일반'   ? ' <span class="text-gray-400 text-[10px]">일반</span>' : '';
@@ -431,7 +518,6 @@
         const amtStr   = `${sign}${Math.abs(e.amount).toFixed(1)}만`;
         const amtClass = e.type === '투자' ? 'text-red-500' : 'text-green-600';
         const badgeCls = e.type === '판매' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600';
-
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-gray-50';
         tr.innerHTML = `
@@ -447,34 +533,31 @@
       });
     }
 
-    /* ── 대시보드 렌더링 ── */
+    /* ══════════════════════════════
+       대시보드
+    ══════════════════════════════ */
     function renderDashboard() {
       let totalQty = 0, sales = 0, invest = 0;
-
       CARD_KEYS.forEach(k => {
         const it = inventory[k];
         if (it) totalQty += (it.shinyQty || 0) + (it.normalQty || 0);
       });
       ledger.forEach(e => { if (e.type === '판매') sales += e.amount; else invest += e.amount; });
       const pnl = sales + invest;
-
       let assetVal = 0;
       CARD_KEYS.forEach(k => {
         const city = k.split('_')[1];
         const it = inventory[k];
         if (it) assetVal += ((it.shinyQty || 0) + (it.normalQty || 0)) * (PRICES[city] || 0);
       });
-
       document.getElementById('dash-qty').textContent    = totalQty;
       document.getElementById('dash-sales').textContent  = sales.toFixed(1);
       document.getElementById('dash-invest').textContent = Math.abs(invest).toFixed(1);
       document.getElementById('dash-asset').textContent  = `${assetVal.toFixed(1)}만원`;
-
       const pnlEl = document.getElementById('dash-pnl');
       pnlEl.textContent = pnl.toFixed(1);
       pnlEl.className   = `text-3xl font-extrabold ${pnl >= 0 ? 'text-green-600' : 'text-red-500'}`;
 
-      /* 차트 1: 도시별 보유 수량 */
       const CITY_COLORS = ['#6366f1', '#f59e0b', '#06b6d4'];
       const PIE_COLORS  = ['#818cf8','#22d3ee','#fb923c','#f472b6','#34d399','#fbbf24','#a78bfa','#60a5fa','#f87171','#10b981'];
 
@@ -484,7 +567,6 @@
           return sum + (it ? (it.shinyQty || 0) + (it.normalQty || 0) : 0);
         }, 0)
       );
-
       if (chartHoldings) chartHoldings.destroy();
       chartHoldings = new Chart(document.getElementById('chart-holdings'), {
         type: 'pie',
@@ -492,7 +574,6 @@
         options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 8 } } } }
       });
 
-      /* 차트 2: 투자 품목별 */
       const investMap = {};
       ledger.filter(e => e.type === '투자').forEach(e => {
         const parts = e.item.split('_');
@@ -501,9 +582,7 @@
           : `${parts[0]}(${parts[1]})`;
         investMap[lbl] = (investMap[lbl] || 0) + Math.abs(e.amount);
       });
-      const iLabels = Object.keys(investMap);
-      const iValues = Object.values(investMap);
-
+      const iLabels = Object.keys(investMap), iValues = Object.values(investMap);
       if (chartInvest) chartInvest.destroy();
       if (iLabels.length === 0) {
         chartInvest = new Chart(document.getElementById('chart-invest'), {
@@ -520,9 +599,300 @@
       }
     }
 
-    /* ── 초기화 ── */
+    /* ══════════════════════════════
+       예약 — 헬퍼
+    ══════════════════════════════ */
+    function toLocalDateStr(d) {
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function getDday(dateStr) {
+      const today = new Date(); today.setHours(0,0,0,0);
+      const target = new Date(dateStr + 'T00:00:00');
+      return Math.round((target - today) / 86400000);
+    }
+
+    function formatDateKR(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}(${WEEK_DAYS[d.getDay()]})`;
+    }
+
+    function itemLabel(itemKey) {
+      const p = itemKey.split('_');
+      return p.length >= 3
+        ? `${p[0]}(${p[1]}) ${p[2] === '이로치' ? '✨이로치' : '일반'}`
+        : `${p[0]}(${p[1]})`;
+    }
+
+    /* ══════════════════════════════
+       예약 — 폼
+    ══════════════════════════════ */
+    function initReservationForm() {
+      const sel = document.getElementById('res-item');
+      if (!sel) return;
+      sel.innerHTML = '';
+      CITY_NAMES.forEach(city => {
+        const grp = document.createElement('optgroup');
+        grp.label = `▸ ${city}`;
+        CITIES[city].forEach(species => {
+          ['이로치', '일반'].forEach(variant => {
+            const opt = document.createElement('option');
+            opt.value = `${species}_${city}_${variant}`;
+            opt.textContent = `${species} ${variant === '이로치' ? '✨이로치' : '일반'}`;
+            grp.appendChild(opt);
+          });
+        });
+        sel.appendChild(grp);
+      });
+    }
+
+    function updateTradeDate() {
+      const friendStart = document.getElementById('res-friendStart').value;
+      const friendType  = document.getElementById('res-friendType').value;
+      let tradeDate = '';
+      if (friendType === '즉시') {
+        tradeDate = toLocalDateStr(new Date());
+      } else if (friendType && friendStart) {
+        const base = new Date(friendStart + 'T00:00:00');
+        base.setDate(base.getDate() + (friendType === '그레이트' ? 7 : 30));
+        tradeDate = toLocalDateStr(base);
+      }
+      if (tradeDate) document.getElementById('res-tradeDate').value = tradeDate;
+    }
+
+    function addReservation() {
+      const buyer       = document.getElementById('res-buyer').value.trim();
+      const platform    = document.getElementById('res-platform').value;
+      const item        = document.getElementById('res-item').value;
+      const price       = parseFloat(document.getElementById('res-price').value) || 0;
+      const deposit     = parseFloat(document.getElementById('res-deposit').value) || 0;
+      const friendStart = document.getElementById('res-friendStart').value;
+      const friendType  = document.getElementById('res-friendType').value;
+      const tradeDate   = document.getElementById('res-tradeDate').value;
+      const notes       = document.getElementById('res-notes').value.trim();
+
+      if (!buyer)     { alert('구매자를 입력해주세요.'); return; }
+      if (!tradeDate) { alert('거래예정일을 입력해주세요.\n(친구타입을 선택하면 자동 계산됩니다.)'); return; }
+
+      /* 특교 제한 체크 */
+      const d = new Date(tradeDate + 'T00:00:00');
+      const dow = d.getDay();
+      const isWeekend = dow === 0 || dow === 6;
+      if (!isWeekend) {
+        const isFriday  = dow === 5;
+        const maxCount  = isFriday ? 2 : 1;
+        const curCount  = reservations.filter(r => r.tradeDate === tradeDate && r.status !== '취소').length;
+        if (curCount >= maxCount) {
+          alert('해당 날짜 특교 한도 초과');
+          return;
+        }
+      }
+
+      reservations.push({
+        id: Date.now().toString(),
+        buyer, platform, item, price, deposit,
+        friendStart, friendType, tradeDate,
+        status: '활성', notes
+      });
+      saveReservations();
+
+      /* 폼 초기화 */
+      ['res-buyer','res-price','res-deposit','res-friendStart','res-notes'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('res-friendType').value = '';
+      document.getElementById('res-tradeDate').value  = '';
+
+      renderReservations();
+    }
+
+    /* ══════════════════════════════
+       예약 — 완료 / 취소
+    ══════════════════════════════ */
+    function completeReservation(id) {
+      const r = reservations.find(r => r.id === id);
+      if (!r) return;
+      if (!confirm(`${r.buyer}님 예약 완료 처리?\n→ 장부에 판매 기록이 추가됩니다.`)) return;
+
+      ledger.push({
+        id: Date.now().toString(),
+        date: r.tradeDate,
+        type: '판매',
+        item: r.item,
+        amount: r.price,
+        memo: r.notes || `${r.buyer} (${r.platform})`
+      });
+      saveLedger();
+      renderLedger();
+
+      const parts = r.item.split('_');
+      const cardKey = `${parts[0]}_${parts[1]}`;
+      const isShiny = parts[2] === '이로치';
+      const field   = isShiny ? 'shinyQty' : 'normalQty';
+      if (inventory[cardKey]) {
+        inventory[cardKey][field] = Math.max(0, (inventory[cardKey][field] || 0) - 1);
+        saveInventory();
+        const el = document.getElementById(`qty-${cardKey}-${isShiny ? 'shiny' : 'normal'}`);
+        if (el) el.value = inventory[cardKey][field];
+      }
+
+      r.status = '완료';
+      saveReservations();
+      renderReservations();
+    }
+
+    function cancelReservation(id) {
+      const r = reservations.find(r => r.id === id);
+      if (!r) return;
+      if (!confirm(`${r.buyer}님 예약을 취소하시겠습니까?`)) return;
+      r.status = '취소';
+      saveReservations();
+      renderReservations();
+    }
+
+    /* ══════════════════════════════
+       예약 — 렌더링
+    ══════════════════════════════ */
+    function renderReservations() {
+      renderCalendar();
+      renderUpcomingList();
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById('cal-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const today = new Date(); today.setHours(0,0,0,0);
+      const dow = today.getDay();
+      const offset = dow === 0 ? -6 : 1 - dow;
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() + offset);
+
+      /* 날짜별 활성 예약 수 */
+      const countMap = {};
+      reservations.filter(r => r.status !== '취소').forEach(r => {
+        if (r.tradeDate) countMap[r.tradeDate] = (countMap[r.tradeDate] || 0) + 1;
+      });
+
+      /* 달력 타이틀 */
+      const endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 34);
+      const titleEl = document.getElementById('cal-title');
+      if (titleEl) {
+        const sm = startDate.getMonth() + 1, em = endDate.getMonth() + 1;
+        titleEl.textContent = sm === em
+          ? `${startDate.getFullYear()}년 ${sm}월`
+          : `${startDate.getFullYear()}년 ${sm}~${em}월`;
+      }
+
+      for (let i = 0; i < 35; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        const dateStr   = toLocalDateStr(date);
+        const count     = countMap[dateStr] || 0;
+        const isPast    = date < today;
+        const isToday   = date.getTime() === today.getTime();
+        const dayOfWeek = date.getDay();
+        const isFriday  = dayOfWeek === 5;
+        const isSat     = dayOfWeek === 6;
+        const isSun     = dayOfWeek === 0;
+        const isWeekend = isSat || isSun;
+        const limit     = isFriday ? 2 : (isWeekend ? 999 : 1);
+        const exceeded  = !isWeekend && count > limit;
+
+        const cell = document.createElement('div');
+        cell.className = 'cal-cell rounded-lg text-center py-1 px-0.5 relative flex flex-col items-center justify-center gap-px';
+
+        /* 배경색 */
+        if (isPast) {
+          cell.style.cssText = 'background:#f9fafb;opacity:0.45';
+        } else if (count === 0) {
+          cell.style.background = '#f3f4f6';
+        } else if (count === 1) {
+          cell.style.background = 'rgba(239,68,68,0.3)';
+        } else {
+          cell.style.background = 'rgba(239,68,68,0.6)';
+        }
+
+        /* 날짜 텍스트 */
+        const dayNum = date.getDate();
+        const displayDay = (i === 0 || dayNum === 1)
+          ? `<span class="text-[9px] font-normal">${date.getMonth()+1}/</span>${dayNum}`
+          : String(dayNum);
+        const dayColor = isToday ? 'text-blue-600 font-extrabold'
+                       : isSun   ? 'text-red-500'
+                       : isSat   ? 'text-blue-400'
+                       : 'text-gray-600';
+
+        let countHtml = '';
+        if (count > 0) {
+          const cClass = exceeded ? 'text-red-700 font-bold' : 'text-gray-500';
+          countHtml = `<span class="text-[9px] leading-none ${cClass}">${exceeded ? '!' : count}건</span>`;
+        }
+
+        cell.innerHTML = `<span class="${dayColor} text-[11px] leading-tight">${displayDay}</span>${countHtml}`;
+        grid.appendChild(cell);
+      }
+    }
+
+    function renderUpcomingList() {
+      const container = document.getElementById('upcoming-list');
+      const empty     = document.getElementById('upcoming-empty');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const active = reservations
+        .filter(r => r.status === '활성')
+        .sort((a, b) => a.tradeDate.localeCompare(b.tradeDate))
+        .slice(0, 10);
+
+      const countEl = document.getElementById('res-count');
+      if (countEl) countEl.textContent = active.length ? `(${active.length}건)` : '';
+
+      if (active.length === 0) { empty.classList.remove('hidden'); return; }
+      empty.classList.add('hidden');
+
+      active.forEach(r => {
+        const dday = getDday(r.tradeDate);
+        let colorClass, ddayLabel;
+
+        if (dday < 0)       { colorClass = 'text-gray-400';              ddayLabel = `D+${Math.abs(dday)}`; }
+        else if (dday === 0){ colorClass = 'text-red-700';                ddayLabel = 'D-Day'; }
+        else if (dday <= 3) { colorClass = 'text-red-600';                ddayLabel = `D-${dday}`; }
+        else if (dday <= 7) { colorClass = 'text-orange-600';             ddayLabel = `D-${dday}`; }
+        else                { colorClass = 'text-gray-600';               ddayLabel = `D-${dday}`; }
+
+        const boldClass = dday === 0 ? 'font-bold' : '';
+
+        const item = document.createElement('div');
+        item.className = `py-2 flex items-start justify-between gap-2 ${dday < 0 ? 'opacity-60' : ''}`;
+        item.innerHTML = `
+          <div class="flex-1 min-w-0">
+            <p class="${colorClass} ${boldClass} text-sm leading-snug">
+              <span class="font-mono font-bold text-xs mr-0.5">[${ddayLabel}]</span>${formatDateKR(r.tradeDate)}
+              <span class="font-medium ml-1">${r.platform}</span> — <span>${itemLabel(r.item)}</span>
+              <span class="font-semibold"> ${r.price}만</span>
+            </p>
+            <p class="${colorClass} text-xs mt-0.5 opacity-80">
+              구매자: ${r.buyer}${r.deposit ? ` · 계약금 ${r.deposit}만` : ''}${r.notes ? ` / ${r.notes}` : ''}
+            </p>
+          </div>
+          <div class="flex flex-col gap-1 flex-shrink-0 pt-0.5">
+            <button onclick="completeReservation('${r.id}')"
+              class="text-[11px] bg-green-50 hover:bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium whitespace-nowrap">완료</button>
+            <button onclick="cancelReservation('${r.id}')"
+              class="text-[11px] bg-gray-50 hover:bg-gray-100 text-gray-500 px-2 py-0.5 rounded whitespace-nowrap">취소</button>
+          </div>`;
+        container.appendChild(item);
+      });
+    }
+
+    /* ══════════════════════════════
+       초기화
+    ══════════════════════════════ */
     loadData();
     initLedgerForm();
+    initReservationForm();
     renderLedger();
     switchTab('inventory');
     switchCity('도쿄');
