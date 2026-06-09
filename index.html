@@ -215,23 +215,24 @@
 
         const fileInput = document.createElement('input');
         fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.className = 'hidden';
-		fileInput.onchange = e => {
-		const file = e.target.files[0];
-		if (!file) return;
-		const img = new Image();
-		img.onload = () => {
-			const max = 800;
-			let {width, height} = img;
-			if (width > height && width > max) { height *= max/width; width = max; }
-			else if (height > max) { width *= max/height; height = max; }
-			const canvas = document.createElement('canvas');
-			canvas.width = width; canvas.height = height;
-			canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-			inventory[key].photo = canvas.toDataURL('image/jpeg', 0.8);
-			saveInventory(); renderInventory();
-		};
-		img.src = URL.createObjectURL(file);
-		};
+        fileInput.onchange = e => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = ev => { inventory[key].photo = ev.target.result; saveInventory(); renderInventory(); };
+          reader.readAsDataURL(file);
+        };
+        photoWrap.appendChild(fileInput);
+        photoWrap.onclick = () => fileInput.click();
+
+        /* 라벨 */
+        const label = document.createElement('p');
+        label.className = 'text-[11px] font-bold text-center leading-tight text-gray-700';
+        label.textContent = `${species}`;
+        const bgLabel = document.createElement('span');
+        bgLabel.className = 'text-[10px] font-normal text-gray-400';
+        bgLabel.textContent = ` (${bg})`;
+        label.appendChild(bgLabel);
 
         /* 수량 컨트롤 */
         const qtyRow = document.createElement('div');
