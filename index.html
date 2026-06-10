@@ -329,8 +329,8 @@
     ════════════════════════════════════════ */
     const CITIES = {
       '도쿄':     ['뮤츠', '그란돈', '가이오가', '스이쿤', '프리져'],
-      '시카고':   ['뮤', '그란돈', '가이오가', '라이코', '썬더'],
-      '코펜하겐': ['뮤', '그란돈', '가이오가', '앤테이', '파이어']
+      '시카고':   ['뮤츠', '그란돈', '가이오가', '라이코', '썬더'],
+      '코펜하겐': ['뮤츠', '그란돈', '가이오가', '앤테이', '파이어']
     };
     const CITY_NAMES = Object.keys(CITIES);
     const SPECIES_EMOJI = {
@@ -338,7 +338,7 @@
       '스이쿤':'💧','프리져':'❄','라이코':'⚡','썬더':'🌩','앤테이':'🔥','파이어':'🦅'
     };
     const WEEK_DAYS = ['일','월','화','수','목','금','토'];
-    const INVEST_CATS = ['교통비','레이드패스','도쿄티켓','레이드옵션','배틀패스','기타'];
+    const INVEST_CATS = ['교통비','레이드패스','고페스트 티켓','레이드옵션','배틀패스','기타'];
 
     const CARD_KEYS = [], LEDGER_ITEMS = [];
     CITY_NAMES.forEach(city => {
@@ -371,18 +371,27 @@
     const prcDoc  = () => doc(db, 'users', currentUser.uid, 'settings',     'prices');
 
     /* ════════════════════════════════════════
-       Debounce 저장 (연타 방지 500ms)
+       저장 (즉시 저장 — 새로고침 시 데이터 유실 방지)
+       연타 방지는 150ms 디바운스만 적용
     ════════════════════════════════════════ */
     const _timers = {};
-    function debounced(key, fn, ms = 500) {
+    function debounced(key, fn, ms = 150) {
       clearTimeout(_timers[key]);
       _timers[key] = setTimeout(fn, ms);
     }
 
-    function saveInventory()    { debounced('inv', () => setDoc(invDoc(), inventory)); }
-    function saveLedger()       { debounced('led', () => setDoc(ledDoc(), { entries: ledger })); }
-    function saveReservations() { debounced('res', () => setDoc(resDoc(), { items: reservations })); }
-    function savePricesDoc()    { debounced('prc', () => setDoc(prcDoc(), PRICES)); }
+    function fsErr(label) {
+      return e => {
+        console.error(`[Firebase 저장 오류] ${label}:`, e.code, e.message);
+        if (e.code === 'permission-denied')
+          alert(`저장 실패: Firestore 보안 규칙을 확인해주세요.\n(${label})`);
+      };
+    }
+
+    function saveInventory()    { debounced('inv', () => setDoc(invDoc(), inventory).catch(fsErr('재고'))); }
+    function saveLedger()       { debounced('led', () => setDoc(ledDoc(), { entries: ledger }).catch(fsErr('장부'))); }
+    function saveReservations() { debounced('res', () => setDoc(resDoc(), { items: reservations }).catch(fsErr('예약'))); }
+    function savePricesDoc()    { debounced('prc', () => setDoc(prcDoc(), PRICES).catch(fsErr('시세'))); }
 
     /* ════════════════════════════════════════
        기본값 보정
@@ -432,30 +441,26 @@
       if (prcSnap.exists()) PRICES = prcSnap.data();
       normalizeInventory();
 
-      /* 실시간 onSnapshot */
+      /* 실시간 onSnapshot — 문서 미존재 시에도 기본값으로 처리 */
       onSnapshot(invDoc(), snap => {
-        if (!snap.exists()) return;
-        inventory = snap.data();
+        inventory = snap.exists() ? snap.data() : {};
         normalizeInventory();
         renderCityCards();
-      });
+      }, fsErr('재고 리스너'));
       onSnapshot(ledDoc(), snap => {
-        if (!snap.exists()) return;
-        ledger = snap.data().entries || [];
+        ledger = snap.exists() ? (snap.data().entries || []) : [];
         renderLedger();
         if (!document.getElementById('section-dashboard').classList.contains('hidden')) renderDashboard();
-      });
+      }, fsErr('장부 리스너'));
       onSnapshot(resDoc(), snap => {
-        if (!snap.exists()) return;
-        reservations = snap.data().items || [];
+        reservations = snap.exists() ? (snap.data().items || []) : [];
         if (!document.getElementById('section-reservation').classList.contains('hidden')) renderReservations();
-      });
+      }, fsErr('예약 리스너'));
       onSnapshot(prcDoc(), snap => {
-        if (!snap.exists()) return;
-        PRICES = snap.data();
+        if (snap.exists()) PRICES = snap.data();
         updatePriceSummary();
         if (!document.getElementById('section-dashboard').classList.contains('hidden')) renderDashboard();
-      });
+      }, fsErr('시세 리스너'));
     }
 
     /* ════════════════════════════════════════
@@ -488,10 +493,10 @@
         await loadData();
         initLedgerForm();
         initReservationForm();
-        renderLedger();
         updatePriceSummary();
-        switchTab('inventory');
-        switchCity('도쿄');
+        renderLedger();
+        switchCity('도쿄');   // currentCity 설정 + renderCityCards
+        switchTab('inventory'); // 탭 활성화 + renderCityCards 재호출
       } else {
         currentUser = null;
         document.getElementById('login-screen').classList.remove('hidden');
@@ -561,6 +566,8 @@
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(`section-${tab}`).classList.remove('hidden');
       document.getElementById(`tab-${tab}`).classList.add('active');
+      if (tab === 'inventory')   renderCityCards();
+      if (tab === 'ledger')      buildLedgerItemSelect(document.getElementById('form-type').value);
       if (tab === 'dashboard')   renderDashboard();
       if (tab === 'reservation') renderReservations();
     };
