@@ -3,7 +3,7 @@
 ════════════════════════════════════════ */
 import { initializeApp }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+import { getAuth, signInAnonymously, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc, onSnapshot, enableIndexedDbPersistence }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -18,6 +18,9 @@ const firebaseConfig = {
 };
 
 /*
+── Firebase Console > Authentication > Sign-in method 에서
+   "Anonymous" 제공자를 활성화해야 합니다.
+
 ── Firestore 보안 규칙 (Firebase Console > Firestore > 규칙) ──
 rules_version = '2';
 service cloud.firestore {
@@ -41,11 +44,9 @@ enableIndexedDbPersistence(db).catch(e => {
   else if (e.code === 'unimplemented')  console.warn('오프라인: 브라우저 미지원');
 });
 
-export const provider = new GoogleAuthProvider();
-
 export {
   doc, getDoc, setDoc, onSnapshot,
-  signInWithPopup, signOut, onAuthStateChanged
+  signInAnonymously, onAuthStateChanged
 };
 
 /* ════════════════════════════════════════

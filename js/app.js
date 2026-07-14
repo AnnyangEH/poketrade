@@ -2,9 +2,9 @@
    전역 상태 / 탭 라우팅 / 장부 / 대시보드
 ════════════════════════════════════════ */
 import {
-  auth, db, provider,
+  auth, db,
   doc, getDoc, setDoc, onSnapshot,
-  signInWithPopup, signOut, onAuthStateChanged,
+  signInAnonymously, onAuthStateChanged,
   debounced, fsErr
 } from './firebase.js';
 import { renderReservations, initReservationForm } from './reservation.js';
@@ -118,29 +118,14 @@ async function loadData() {
 }
 
 /* ════════════════════════════════════════
-   인증
+   인증 — 테스트 빌드: 로그인 화면 없이 익명 인증으로 자동 로그인
 ════════════════════════════════════════ */
-document.getElementById('login-btn').addEventListener('click', async () => {
-  try {
-    await signInWithPopup(auth, provider);
-  } catch (e) {
-    console.error(e);
-    document.getElementById('login-error').classList.remove('hidden');
-  }
-});
-
-window.signOutUser = async () => {
-  if (!confirm('로그아웃 하시겠습니까?')) return;
-  await signOut(auth);
-};
+signInAnonymously(auth).catch(e => console.error('익명 로그인 실패:', e));
 
 onAuthStateChanged(auth, async user => {
   if (user) {
     currentUser = user;
-    document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
-    document.getElementById('user-name').textContent =
-      user.displayName ? user.displayName.split(' ')[0] : '';
 
     await staticDataReady;
     await loadData();
@@ -150,7 +135,6 @@ onAuthStateChanged(auth, async user => {
     switchTab('inventory');
   } else {
     currentUser = null;
-    document.getElementById('login-screen').classList.remove('hidden');
     document.getElementById('app').classList.add('hidden');
   }
 });

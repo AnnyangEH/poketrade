@@ -9,25 +9,6 @@
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800">
 
-  <!-- 로그인 화면 -->
-  <div id="login-screen" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center gap-6">
-    <div class="text-center">
-      <p class="text-5xl mb-3">⚡</p>
-      <h1 class="text-2xl font-extrabold text-blue-700 tracking-tight">포켓몬GO 거래 관리</h1>
-      <p class="text-sm text-gray-400 mt-1">Google 계정으로 로그인하세요</p>
-    </div>
-    <button id="login-btn" class="flex items-center gap-3 bg-white border border-gray-200 shadow rounded-xl px-6 py-3 text-sm font-semibold text-gray-700 hover:shadow-md transition">
-      <svg width="18" height="18" viewBox="0 0 18 18">
-        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908C16.658 14.018 17.64 11.71 17.64 9.2z"/>
-        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
-        <path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/>
-        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 6.294C4.672 4.169 6.656 3.58 9 3.58z"/>
-      </svg>
-      Google로 로그인
-    </button>
-    <p id="login-error" class="text-xs text-red-500 hidden">로그인에 실패했습니다. 다시 시도해주세요.</p>
-  </div>
-
   <!-- 메인 앱 -->
   <div id="app" class="hidden">
 
@@ -36,10 +17,6 @@
       <div class="max-w-3xl mx-auto px-3">
         <div class="relative">
           <h1 class="text-lg font-extrabold text-center pt-3 pb-1 tracking-tight text-blue-700">⚡ 포켓몬GO 거래 관리</h1>
-          <div class="absolute right-0 top-2.5 flex items-center gap-1">
-            <span id="user-name" class="text-xs text-gray-400"></span>
-            <button onclick="signOutUser()" class="text-gray-400 hover:text-gray-600 text-[11px] px-1 border border-gray-200 rounded py-0.5">로그아웃</button>
-          </div>
         </div>
         <div class="flex">
           <button onclick="switchTab('inventory')"   id="tab-inventory"   class="tab-btn active flex-1 py-2.5 text-xs font-semibold">📦 재고</button>
