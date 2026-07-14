@@ -22,8 +22,8 @@ export const WEEK_DAYS = ['일','월','화','수','목','금','토'];
 export let pokemonIndex = [];
 export let backgrounds  = [];
 const staticDataReady = Promise.all([
-  fetch('/data/pokemon-index.json').then(r => r.json()),
-  fetch('/data/backgrounds.json').then(r => r.json())
+  fetch('data/pokemon-index.json').then(r => r.json()),
+  fetch('data/backgrounds.json').then(r => r.json())
 ]).then(([idx, bg]) => { pokemonIndex = idx; backgrounds = bg; });
 
 /* ════════════════════════════════════════
