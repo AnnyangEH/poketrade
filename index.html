@@ -9,6 +9,14 @@
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800">
 
+  <!-- 로그인 오류 표시 (익명 인증 실패 시에만 노출) -->
+  <div id="auth-error" class="hidden fixed inset-0 bg-white z-50 flex-col items-center justify-center gap-3 text-center p-6">
+    <p class="text-4xl mb-1">⚠️</p>
+    <p class="font-bold text-gray-700">로그인에 실패했습니다.</p>
+    <p class="text-sm text-gray-500 max-w-xs">Firebase 콘솔 &gt; Authentication &gt; Sign-in method에서 "Anonymous" 제공자가 활성화되어 있는지 확인해주세요.</p>
+    <p id="auth-error-detail" class="text-xs text-gray-400 mt-2 break-all max-w-xs"></p>
+  </div>
+
   <!-- 메인 앱 -->
   <div id="app" class="hidden">
 

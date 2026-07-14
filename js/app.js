@@ -120,7 +120,12 @@ async function loadData() {
 /* ════════════════════════════════════════
    인증 — 테스트 빌드: 로그인 화면 없이 익명 인증으로 자동 로그인
 ════════════════════════════════════════ */
-signInAnonymously(auth).catch(e => console.error('익명 로그인 실패:', e));
+signInAnonymously(auth).catch(e => {
+  console.error('익명 로그인 실패:', e);
+  document.getElementById('auth-error-detail').textContent = `${e.code || ''} ${e.message || e}`;
+  document.getElementById('auth-error').classList.remove('hidden');
+  document.getElementById('auth-error').classList.add('flex');
+});
 
 onAuthStateChanged(auth, async user => {
   if (user) {
