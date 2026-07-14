@@ -1,0 +1,6 @@
+.tab-btn { color: #6b7280; border-bottom: 2px solid transparent; transition: all .2s; }
+.tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+.chip { background: #f3f4f6; color: #6b7280; transition: all .15s; }
+.chip.active { background: #2563eb; color: white; }
+input[type=number]::-webkit-inner-spin-button { opacity: 1; }
+.cal-cell { min-height: 38px; }
