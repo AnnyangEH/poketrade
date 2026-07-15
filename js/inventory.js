@@ -1,38 +1,90 @@
 /* ════════════════════════════════════════
-   재고 탭 — 이미지 합성 프로토타입
-   실제 스프라이트/배경 에셋이 없어 임시 도형으로 대체:
-     일반 = 노란 삼각형, 이로치 = 흰 삼각형, 배경 on = 검정 배경
+   재고 탭 — "Select Pokemon" 스타일 촘촘한 그리드 프로토타입
+   실제 스프라이트/배경 에셋이 없어 색깔 삼각형으로 대체:
+     일반=노랑, 이로치=흰색, 코스튬=하늘색, GMAX=빨강, 전설/UB=보라
+     배경 있음=검정 바탕, 배경 없음=회색 바탕
+   pokemon-index.json/backgrounds.json이 채워지면 이 목업 카탈로그를
+   실제 데이터로 교체하면 됨
 ════════════════════════════════════════ */
+import { initFilterBar, applyFilters } from './search.js';
 
-let variant = 'normal';   // 'normal' | 'shiny'
-let showBackground = true;
+const MOCK_NAMES = ['Charizard', 'Mewtwo', 'Pikachu', 'Rayquaza', 'Groudon', 'Kyogre'];
+const MOCK_TYPES = ['normal', 'shiny', 'costume', 'gmax', 'legendary'];
 
-const VARIANT_COLOR = { normal: '#facc15', shiny: '#ffffff' };
+let idCounter = 0;
+const MOCK_CATALOG = [];
+MOCK_NAMES.forEach(name => {
+  MOCK_TYPES.forEach(type => {
+    [false, true].forEach(hasBackground => {
+      MOCK_CATALOG.push({
+        id: `mock-${idCounter++}`,
+        name,
+        isNormal:    type === 'normal',
+        isShiny:     type === 'shiny',
+        isCostume:   type === 'costume',
+        isGmax:      type === 'gmax',
+        isLegendary: type === 'legendary',
+        hasBackground
+      });
+    });
+  });
+});
+
+const TYPE_COLOR = { normal: '#facc15', shiny: '#ffffff', costume: '#38bdf8', gmax: '#ef4444', legendary: '#a78bfa' };
+function typeColor(e) {
+  if (e.isLegendary) return TYPE_COLOR.legendary;
+  if (e.isGmax)      return TYPE_COLOR.gmax;
+  if (e.isCostume)   return TYPE_COLOR.costume;
+  if (e.isShiny)     return TYPE_COLOR.shiny;
+  return TYPE_COLOR.normal;
+}
+
+const selectedIds = new Set();
+let filterBarReady = false;
 
 export function renderInventory() {
-  const normalBtn = document.getElementById('variant-normal');
-  const shinyBtn  = document.getElementById('variant-shiny');
-  const bgBtn     = document.getElementById('bg-toggle');
-  const bgEl      = document.getElementById('composite-bg');
-  const spriteEl  = document.getElementById('composite-sprite');
-  if (!normalBtn || !shinyBtn || !bgBtn || !bgEl || !spriteEl) return;
-
-  if (!renderInventory._wired) {
-    normalBtn.onclick = () => { variant = 'normal'; renderInventory(); };
-    shinyBtn.onclick  = () => { variant = 'shiny';  renderInventory(); };
-    bgBtn.onclick     = () => { showBackground = !showBackground; renderInventory(); };
-    renderInventory._wired = true;
+  if (!filterBarReady) {
+    initFilterBar(document.getElementById('inventory-filters'), renderInventory);
+    filterBarReady = true;
   }
+  const entries = MOCK_CATALOG.map(e => ({ ...e, selected: selectedIds.has(e.id) }));
+  renderGrid(applyFilters(entries));
+}
 
-  normalBtn.classList.toggle('active', variant === 'normal');
-  shinyBtn.classList.toggle('active', variant === 'shiny');
-  bgBtn.classList.toggle('active', showBackground);
+function renderGrid(entries) {
+  const grid  = document.getElementById('inventory-grid');
+  const empty = document.getElementById('inventory-empty');
+  if (!grid) return;
+  grid.innerHTML = '';
 
-  bgEl.style.background = showBackground ? '#000000' : '#e5e7eb';
+  if (entries.length === 0) {
+    if (empty) empty.classList.remove('hidden');
+    return;
+  }
+  if (empty) empty.classList.add('hidden');
 
-  spriteEl.style.width = '0';
-  spriteEl.style.height = '0';
-  spriteEl.style.borderLeft = '45px solid transparent';
-  spriteEl.style.borderRight = '45px solid transparent';
-  spriteEl.style.borderBottom = `78px solid ${VARIANT_COLOR[variant]}`;
+  entries.forEach(e => grid.appendChild(buildThumb(e)));
+}
+
+function buildThumb(e) {
+  const cell = document.createElement('div');
+  cell.className = 'relative aspect-square cursor-pointer flex items-center justify-center' +
+    (e.selected ? ' ring-2 ring-blue-400 ring-inset' : '');
+  cell.style.background = e.hasBackground ? '#000000' : '#374151';
+  cell.title = e.name;
+
+  const tri = document.createElement('div');
+  tri.style.width = '0';
+  tri.style.height = '0';
+  tri.style.borderLeft = '16px solid transparent';
+  tri.style.borderRight = '16px solid transparent';
+  tri.style.borderBottom = `28px solid ${typeColor(e)}`;
+  cell.appendChild(tri);
+
+  cell.onclick = () => {
+    if (selectedIds.has(e.id)) selectedIds.delete(e.id); else selectedIds.add(e.id);
+    renderInventory();
+  };
+
+  return cell;
 }
