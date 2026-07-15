@@ -64,7 +64,7 @@ export function initFilterBar(container, onChange) {
 export function applyFilters(entries) {
   const q = state.text.trim().toLowerCase();
   return entries.filter(e => {
-    if (q && !e.name.toLowerCase().includes(q)) return false;
+    if (q && !(e.searchText || e.name.toLowerCase()).includes(q)) return false;
     if (state.chips.includes('normal')    && !e.isNormal)    return false;
     if (state.chips.includes('shiny')     && !e.isShiny)     return false;
     if (state.chips.includes('costume')   && !e.isCostume)   return false;

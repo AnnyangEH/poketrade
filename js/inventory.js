@@ -26,6 +26,7 @@ function buildCatalog() {
       entries.push({
         key,
         name: `${p.name_ko} ${f.name}`,
+        searchText: `${p.name_ko} ${p.name_en} ${p.dexId} ${f.name}`.toLowerCase(),
         isNormal: f.formId === 'normal',
         isShiny: !!f.isShiny,
         isCostume: !!f.isCostume,
