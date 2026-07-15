@@ -1,43 +1,41 @@
 /* ════════════════════════════════════════
-   재고 탭 — "Select Pokemon" 스타일 촘촘한 그리드 프로토타입
-   실제 스프라이트/배경 에셋이 없어 색깔 삼각형으로 대체:
-     일반=노랑, 이로치=흰색, 코스튬=하늘색, GMAX=빨강, 전설/UB=보라
-     배경 있음=검정 바탕, 배경 없음=회색 바탕
-   pokemon-index.json/backgrounds.json이 채워지면 이 목업 카탈로그를
-   실제 데이터로 교체하면 됨
+   재고 탭 — "Select Pokemon" 스타일 촘촘한 그리드
+   실제 스프라이트 에셋이 없어 색깔 삼각형으로 대체:
+     일반=노랑, 이로치=흰색, 코스튬=하늘색, GMAX=빨강
+   pokemon-index.json 실제 데이터(898종·폼 2195개) 사용.
+   배경(backgrounds.json)은 아직 폼별로 연결되어 있지 않아 이번 단계에선
+   그리드에 반영하지 않음 — "Legend/UB"/"Background" 칩도 소스 데이터가
+   없어 당분간 항상 false(비활성 상태)
 ════════════════════════════════════════ */
-import { initFilterBar, applyFilters } from './search.js';
-import { inventory, saveInventory } from './app.js';
+import { initFilterBar, applyFilters, getFilterState } from './search.js';
+import { inventory, saveInventory, pokemonIndex } from './app.js';
 
-const MOCK_NAMES = ['Charizard', 'Mewtwo', 'Pikachu', 'Rayquaza', 'Groudon', 'Kyogre'];
-const MOCK_TYPES = ['normal', 'shiny', 'costume', 'gmax', 'legendary'];
+const TYPE_COLOR = { normal: '#facc15', shiny: '#ffffff', costume: '#38bdf8', gmax: '#ef4444' };
+function typeColor(e) {
+  if (e.isGmax)    return TYPE_COLOR.gmax;
+  if (e.isCostume) return TYPE_COLOR.costume;
+  if (e.isShiny)   return TYPE_COLOR.shiny;
+  return TYPE_COLOR.normal;
+}
 
-let idCounter = 0;
-const MOCK_CATALOG = [];
-MOCK_NAMES.forEach(name => {
-  MOCK_TYPES.forEach(type => {
-    [false, true].forEach(hasBackground => {
-      MOCK_CATALOG.push({
-        id: `mock-${idCounter++}`,
-        name,
-        isNormal:    type === 'normal',
-        isShiny:     type === 'shiny',
-        isCostume:   type === 'costume',
-        isGmax:      type === 'gmax',
-        isLegendary: type === 'legendary',
-        hasBackground
+function buildCatalog() {
+  const entries = [];
+  pokemonIndex.forEach(p => {
+    p.forms.forEach(f => {
+      const key = `${p.dexId}_${f.formId}`;
+      entries.push({
+        key,
+        name: `${p.name_ko} ${f.name}`,
+        isNormal: f.formId === 'normal',
+        isShiny: !!f.isShiny,
+        isCostume: !!f.isCostume,
+        isGmax: !!p.isGmaxAvailable,
+        isLegendary: false,   // 소스 데이터 없음 — 항상 false
+        hasBackground: false // 폼별 배경 연결 없음 — 항상 false
       });
     });
   });
-});
-
-const TYPE_COLOR = { normal: '#facc15', shiny: '#ffffff', costume: '#38bdf8', gmax: '#ef4444', legendary: '#a78bfa' };
-function typeColor(e) {
-  if (e.isLegendary) return TYPE_COLOR.legendary;
-  if (e.isGmax)      return TYPE_COLOR.gmax;
-  if (e.isCostume)   return TYPE_COLOR.costume;
-  if (e.isShiny)     return TYPE_COLOR.shiny;
-  return TYPE_COLOR.normal;
+  return entries;
 }
 
 let filterBarReady = false;
@@ -57,7 +55,7 @@ function renderMonbox() {
   if (!grid) return;
   grid.innerHTML = '';
 
-  const owned = MOCK_CATALOG.filter(e => inventory[e.id]);
+  const owned = buildCatalog().filter(e => inventory[e.key]);
   if (owned.length === 0) {
     if (empty) empty.classList.remove('hidden');
     return;
@@ -100,7 +98,23 @@ function wireModal() {
 }
 
 function renderPickerGrid() {
-  const entries = MOCK_CATALOG.map(e => ({ ...e, selected: !!inventory[e.id] }));
+  const grid  = document.getElementById('inventory-grid');
+  const empty = document.getElementById('inventory-empty');
+  if (!grid) return;
+
+  // 필터가 하나도 없으면 898종 전체(폼 2195개)를 그냥 다 그리지 않고 검색/칩을 유도
+  const state = getFilterState();
+  if (!state.text.trim() && state.chips.length === 0) {
+    grid.innerHTML = '';
+    if (empty) {
+      empty.classList.remove('hidden');
+      empty.textContent = '검색하거나 칩을 선택해주세요.';
+    }
+    return;
+  }
+  if (empty) empty.textContent = '조건에 맞는 항목이 없습니다.';
+
+  const entries = buildCatalog().map(e => ({ ...e, selected: !!inventory[e.key] }));
   renderGrid(applyFilters(entries));
 }
 
@@ -123,7 +137,7 @@ function buildThumb(e) {
   const cell = document.createElement('div');
   cell.className = 'relative aspect-square cursor-pointer flex items-center justify-center' +
     (e.selected ? ' ring-2 ring-blue-400 ring-inset' : '');
-  cell.style.background = e.hasBackground ? '#000000' : '#374151';
+  cell.style.background = '#374151';
   cell.title = e.name;
 
   const tri = document.createElement('div');
@@ -135,8 +149,8 @@ function buildThumb(e) {
   cell.appendChild(tri);
 
   cell.onclick = () => {
-    if (inventory[e.id]) delete inventory[e.id];
-    else inventory[e.id] = { selectedAt: Date.now() };
+    if (inventory[e.key]) delete inventory[e.key];
+    else inventory[e.key] = { selectedAt: Date.now() };
     saveInventory();
     renderMonbox();
     renderPickerGrid();
