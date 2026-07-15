@@ -21,12 +21,15 @@ function typeColor(e) {
 function buildCatalog() {
   const entries = [];
   pokemonIndex.forEach(p => {
+    // 검색은 종(이름/영문명/도감번호) 단위로만 매칭 — 폼/코스튬 이름까지 매칭하면
+    // "피카츄 바이저"처럼 다른 종의 코스튬 이름에 다른 종 검색어가 우연히 걸리는 문제가 생김
+    const speciesSearchText = `${p.name_ko} ${p.name_en} ${p.dexId}`.toLowerCase();
     p.forms.forEach(f => {
       const key = `${p.dexId}_${f.formId}`;
       entries.push({
         key,
         name: `${p.name_ko} ${f.name}`,
-        searchText: `${p.name_ko} ${p.name_en} ${p.dexId} ${f.name}`.toLowerCase(),
+        searchText: speciesSearchText,
         isNormal: f.formId === 'normal',
         isShiny: !!f.isShiny,
         isCostume: !!f.isCostume,
