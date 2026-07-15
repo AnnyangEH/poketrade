@@ -7,6 +7,7 @@
    실제 데이터로 교체하면 됨
 ════════════════════════════════════════ */
 import { initFilterBar, applyFilters } from './search.js';
+import { inventory, saveInventory } from './app.js';
 
 const MOCK_NAMES = ['Charizard', 'Mewtwo', 'Pikachu', 'Rayquaza', 'Groudon', 'Kyogre'];
 const MOCK_TYPES = ['normal', 'shiny', 'costume', 'gmax', 'legendary'];
@@ -39,7 +40,6 @@ function typeColor(e) {
   return TYPE_COLOR.normal;
 }
 
-const selectedIds = new Set();
 let filterBarReady = false;
 
 export function renderInventory() {
@@ -47,7 +47,7 @@ export function renderInventory() {
     initFilterBar(document.getElementById('inventory-filters'), renderInventory);
     filterBarReady = true;
   }
-  const entries = MOCK_CATALOG.map(e => ({ ...e, selected: selectedIds.has(e.id) }));
+  const entries = MOCK_CATALOG.map(e => ({ ...e, selected: !!inventory[e.id] }));
   renderGrid(applyFilters(entries));
 }
 
@@ -82,7 +82,9 @@ function buildThumb(e) {
   cell.appendChild(tri);
 
   cell.onclick = () => {
-    if (selectedIds.has(e.id)) selectedIds.delete(e.id); else selectedIds.add(e.id);
+    if (inventory[e.id]) delete inventory[e.id];
+    else inventory[e.id] = { selectedAt: Date.now() };
+    saveInventory();
     renderInventory();
   };
 
