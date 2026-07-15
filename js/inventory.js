@@ -41,12 +41,65 @@ function typeColor(e) {
 }
 
 let filterBarReady = false;
+let modalWired = false;
 
 export function renderInventory() {
-  if (!filterBarReady) {
-    initFilterBar(document.getElementById('inventory-filters'), renderInventory);
-    filterBarReady = true;
+  renderMonbox();
+  wireModal();
+}
+
+/* ════════════════════════════════════════
+   몬박스 요약 (재고 탭 메인 화면)
+════════════════════════════════════════ */
+function renderMonbox() {
+  const grid  = document.getElementById('monbox-grid');
+  const empty = document.getElementById('monbox-empty');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const owned = MOCK_CATALOG.filter(e => inventory[e.id]);
+  if (owned.length === 0) {
+    if (empty) empty.classList.remove('hidden');
+    return;
   }
+  if (empty) empty.classList.add('hidden');
+  owned.forEach(e => grid.appendChild(buildThumb({ ...e, selected: true })));
+}
+
+/* ════════════════════════════════════════
+   포켓몬 선택 모달
+════════════════════════════════════════ */
+function wireModal() {
+  if (modalWired) return;
+  modalWired = true;
+
+  const modal   = document.getElementById('select-modal');
+  const addBtn  = document.getElementById('monbox-add-btn');
+  const closeBtn = document.getElementById('select-modal-close');
+
+  addBtn.addEventListener('click', () => {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    if (!filterBarReady) {
+      initFilterBar(document.getElementById('inventory-filters'), renderPickerGrid);
+      filterBarReady = true;
+    }
+    renderPickerGrid();
+  });
+
+  closeBtn.addEventListener('click', () => {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  });
+  modal.addEventListener('click', e => {
+    if (e.target === modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  });
+}
+
+function renderPickerGrid() {
   const entries = MOCK_CATALOG.map(e => ({ ...e, selected: !!inventory[e.id] }));
   renderGrid(applyFilters(entries));
 }
@@ -85,7 +138,8 @@ function buildThumb(e) {
     if (inventory[e.id]) delete inventory[e.id];
     else inventory[e.id] = { selectedAt: Date.now() };
     saveInventory();
-    renderInventory();
+    renderMonbox();
+    renderPickerGrid();
   };
 
   return cell;
