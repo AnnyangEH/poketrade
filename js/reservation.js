@@ -350,17 +350,32 @@ window.resetAllReservations = () => {
    확반(Guaranteed Lucky) 연도별 사용 횟수
    포켓몬고 자체에는 이 카운트가 안 보여서 직접 추적
 ════════════════════════════════════════ */
+const GUARANTEED_LUCKY_OFFSET_KEY = 'poketrade_guaranteed_lucky_offset';
+
+function loadGuaranteedLuckyOffset() {
+  const n = Number(localStorage.getItem(GUARANTEED_LUCKY_OFFSET_KEY));
+  return Number.isFinite(n) ? n : 0;
+}
+
+window.adjustGuaranteedLuckyOffset = delta => {
+  localStorage.setItem(GUARANTEED_LUCKY_OFFSET_KEY, String(loadGuaranteedLuckyOffset() + delta));
+  renderGuaranteedLuckyCount();
+};
+
 function renderGuaranteedLuckyCount() {
-  const el = document.getElementById('guaranteed-lucky-count');
-  if (!el) return;
+  const el         = document.getElementById('guaranteed-lucky-count');
+  const settingsEl = document.getElementById('settings-guaranteed-lucky-count');
   const year = new Date().getFullYear();
-  const count = reservations.filter(r =>
+  const autoCount = reservations.filter(r =>
     r.isGuaranteedLucky &&
     r.status !== '취소' &&
     r.tradeDate && new Date(r.tradeDate + 'T00:00:00').getFullYear() === year
   ).length;
-  el.textContent = `(${count})`;
+  const total = Math.max(0, autoCount + loadGuaranteedLuckyOffset());
+  if (el)         el.textContent = `(${total})`;
+  if (settingsEl) settingsEl.textContent = total;
 }
+window.renderGuaranteedLuckyCount = renderGuaranteedLuckyCount;
 
 /* ════════════════════════════════════════
    렌더링

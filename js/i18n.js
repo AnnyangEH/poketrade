@@ -43,6 +43,7 @@ const TRANSLATIONS = {
     confirmQuota: names => `이미 ${names}님과 예약 일정이 있습니다. 일정을 추가하시겠습니까?`,
     settingsTitle: '설정',
     languageLabel: '언어',
+    guaranteedLuckyAdjustLabel: '확반 횟수 조정',
     btnResetAll: '모든 일정 내역 초기화',
     confirmResetAll: '정말 모든 일정 내역을 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.'
   },
@@ -87,6 +88,7 @@ const TRANSLATIONS = {
     confirmQuota: names => `You already have a reservation with ${names}. Add this one anyway?`,
     settingsTitle: 'Settings',
     languageLabel: 'Language',
+    guaranteedLuckyAdjustLabel: 'Adjust Guaranteed Lucky Count',
     btnResetAll: 'Reset All Schedule History',
     confirmResetAll: 'Are you sure you want to reset all schedule history?\nThis cannot be undone.'
   }
@@ -137,6 +139,7 @@ window.openSettings = () => {
   modal.classList.remove('hidden');
   modal.classList.add('flex');
   updateLangButtons();
+  if (window.renderGuaranteedLuckyCount) window.renderGuaranteedLuckyCount();
 };
 
 window.closeSettings = () => {
