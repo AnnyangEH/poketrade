@@ -21,7 +21,7 @@ const TRANSLATIONS = {
     weekDays: ['일', '월', '화', '수', '목', '금', '토'],
     calWd0: '월', calWd1: '화', calWd2: '수', calWd3: '목', calWd4: '금', calWd5: '토', calWd6: '일',
     legend0: '0건', legend1: '1건', legend2: '2건+',
-    upcomingTitle: '임박 교환',
+    upcomingTitle: '예정된 교환',
     upcomingEmpty: '활성 예약이 없습니다.',
     completedTitle: '완료된 교환',
     completedEmpty: '완료된 교환이 없습니다.',

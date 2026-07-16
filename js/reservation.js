@@ -31,6 +31,13 @@ function formatDateKR(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
   return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}(${t('weekDays')[d.getDay()]})`;
 }
+function formatDateShort(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+function truncateText(str, max = 20) {
+  return str.length > max ? str.slice(0, max) + '…' : str;
+}
 function badgeTags(r) {
   const tags = [];
   if (r.isGuaranteedLucky) tags.push(t('checkGuaranteedLucky'));
@@ -258,16 +265,40 @@ export function renderReservations() {
 
 window.addEventListener('languagechange', () => renderReservations());
 
+let viewYear, viewMonth; // 캘린더에 현재 표시 중인 연/월 (월은 0-indexed)
+
+function ensureCalendarView() {
+  if (viewYear === undefined) {
+    const today = new Date();
+    viewYear  = today.getFullYear();
+    viewMonth = today.getMonth();
+  }
+}
+
+window.changeCalendarMonth = delta => {
+  ensureCalendarView();
+  viewMonth += delta;
+  if (viewMonth < 0)       { viewMonth = 11; viewYear--; }
+  else if (viewMonth > 11) { viewMonth = 0;  viewYear++; }
+  renderCalendar();
+};
+
 function renderCalendar() {
+  ensureCalendarView();
   const grid = document.getElementById('cal-grid');
   if (!grid) return;
   grid.innerHTML = '';
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const dow = today.getDay();
-  const offset = dow === 0 ? -6 : 1 - dow;
-  const startDate = new Date(today);
-  startDate.setDate(today.getDate() + offset);
+
+  const firstOfMonth = new Date(viewYear, viewMonth, 1);
+  const lastOfMonth  = new Date(viewYear, viewMonth + 1, 0);
+  const firstDow     = firstOfMonth.getDay(); // 0=일 ~ 6=토
+  const leadingDays  = firstDow === 0 ? 6 : firstDow - 1; // 월요일 시작 기준 앞쪽 여백
+  const startDate    = new Date(firstOfMonth);
+  startDate.setDate(firstOfMonth.getDate() - leadingDays);
+
+  const totalCells = Math.ceil((leadingDays + lastOfMonth.getDate()) / 7) * 7;
 
   const countMap = {};
   const guaranteedLuckyMap = {}, luckyTrinketMap = {};
@@ -278,19 +309,14 @@ function renderCalendar() {
     if (r.isLuckyTrinket)    luckyTrinketMap[r.tradeDate] = true;
   });
 
-  const endDate = new Date(startDate); endDate.setDate(startDate.getDate() + 34);
   const titleEl = document.getElementById('cal-title');
-  if (titleEl) {
-    const sm = startDate.getMonth() + 1, em = endDate.getMonth() + 1;
-    titleEl.textContent = sm === em
-      ? `${startDate.getFullYear()}년 ${sm}월`
-      : `${startDate.getFullYear()}년 ${sm}~${em}월`;
-  }
+  if (titleEl) titleEl.textContent = `${viewYear}년 ${viewMonth + 1}월`;
 
-  for (let i = 0; i < 35; i++) {
+  for (let i = 0; i < totalCells; i++) {
     const date = new Date(startDate);
     date.setDate(startDate.getDate() + i);
     const dateStr   = toLocalDateStr(date);
+    const inMonth   = date.getMonth() === viewMonth;
     const count     = countMap[dateStr] || 0;
     const isPast    = date < today;
     const isToday   = date.getTime() === today.getTime();
@@ -302,29 +328,31 @@ function renderCalendar() {
     const exceeded  = !isWeekend && count > (isFriday ? 3 : 1);
 
     const cell = document.createElement('div');
-    cell.className = 'cal-cell rounded-lg text-center py-1 px-0.5 relative flex flex-col items-center justify-center gap-px cursor-pointer';
+    cell.className = 'cal-cell rounded-lg text-center py-1 px-0.5 relative flex flex-col items-center justify-center gap-px cursor-pointer overflow-hidden';
 
-    if (isPast)         cell.style.cssText = 'background:#f9fafb;opacity:0.45';
-    else if (count === 0) cell.style.background = '#f3f4f6';
-    else if (count === 1) cell.style.background = 'rgba(239,68,68,0.3)';
-    else                  cell.style.background = 'rgba(239,68,68,0.6)';
+    if (!inMonth)          cell.style.cssText = 'background:#f9fafb;opacity:0.35';
+    else if (isPast)       cell.style.cssText = 'background:#f9fafb;opacity:0.45';
+    else if (count === 0)  cell.style.background = '#f3f4f6';
+    else if (count === 1)  cell.style.background = 'rgba(239,68,68,0.3)';
+    else                   cell.style.background = 'rgba(239,68,68,0.6)';
 
-    if (guaranteedLuckyMap[dateStr]) cell.style.boxShadow = 'inset 0 0 0 2px #eab308'; // 확반 = 노란 테두리
+    if (inMonth && guaranteedLuckyMap[dateStr]) cell.style.boxShadow = 'inset 0 0 0 2px #eab308'; // 확반 = 노란 테두리
 
     const dayNum     = date.getDate();
-    const displayDay = (i === 0 || dayNum === 1)
+    const displayDay = (dayNum === 1)
       ? `<span class="text-[9px] font-normal">${date.getMonth()+1}/</span>${dayNum}`
       : String(dayNum);
-    const dayColor   = isToday ? 'text-blue-600 font-extrabold'
-                     : isSun   ? 'text-red-500'
-                     : isSat   ? 'text-blue-400'
+    const dayColor   = !inMonth ? 'text-gray-300'
+                     : isToday  ? 'text-blue-600 font-extrabold'
+                     : isSun    ? 'text-red-500'
+                     : isSat    ? 'text-blue-400'
                      : 'text-gray-600';
-    const countHtml  = count > 0
+    const countHtml  = (inMonth && count > 0)
       ? `<span class="text-[9px] leading-none ${exceeded ? 'text-red-700 font-bold' : 'text-gray-500'}">${exceeded ? '!' : count}건</span>`
       : '';
-    const trinketHtml = luckyTrinketMap[dateStr] ? '<span class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-500"></span>' : '';
+    const trinketHtml = (inMonth && luckyTrinketMap[dateStr]) ? '<span class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-500"></span>' : '';
 
-    cell.innerHTML = `<span class="${dayColor} text-[11px] leading-tight">${displayDay}</span>${countHtml}${trinketHtml}`;
+    cell.innerHTML = `<span class="${dayColor} text-[11px] leading-tight truncate block max-w-full">${displayDay}</span>${countHtml}${trinketHtml}`;
     cell.onclick = () => {
       const dateInput = document.getElementById('res-date');
       if (dateInput) dateInput.value = dateStr;
@@ -402,15 +430,15 @@ function renderCompletedList() {
   empty.classList.add('hidden');
 
   completed.forEach(r => {
-    const receiveText = r.receiveMemo ? `${pokemonName(r.receiveDexId)} (${r.receiveMemo})` : pokemonName(r.receiveDexId);
-    const giveText    = r.giveMemo ? `${pokemonName(r.giveDexId)} (${r.giveMemo})` : pokemonName(r.giveDexId);
+    const receiveText = truncateText(r.receiveMemo ? `${r.receiveMemo} ${pokemonName(r.receiveDexId)}` : pokemonName(r.receiveDexId));
+    const giveText    = truncateText(r.giveMemo ? `${r.giveMemo} ${pokemonName(r.giveDexId)}` : pokemonName(r.giveDexId));
 
     const el = document.createElement('div');
     el.className = 'py-2 flex items-start justify-between gap-2';
     el.innerHTML = `
       <div class="flex-1 min-w-0">
-        <p class="text-gray-600 text-sm leading-snug">
-          <span class="font-mono font-bold text-xs mr-0.5">${formatDateKR(r.tradeDate)}</span>
+        <p class="text-gray-600 text-sm leading-snug truncate">
+          <span class="font-mono font-bold text-xs mr-0.5">${formatDateShort(r.tradeDate)}</span>
           <span class="font-medium ml-1">${t('receiveLabel')}: ${receiveText}</span>${badgeTags(r)}
           <span class="text-gray-400"> / ${t('giveLabel')}: ${giveText}</span>
         </p>

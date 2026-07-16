@@ -113,7 +113,11 @@
       </div>
 
       <div class="bg-white rounded-xl shadow p-3">
-        <p class="text-sm font-bold mb-2" id="cal-title">달력</p>
+        <div class="flex items-center justify-between mb-2">
+          <button onclick="changeCalendarMonth(-1)" class="text-gray-400 hover:text-gray-600 px-2 text-lg leading-none">‹</button>
+          <p class="text-sm font-bold" id="cal-title">달력</p>
+          <button onclick="changeCalendarMonth(1)" class="text-gray-400 hover:text-gray-600 px-2 text-lg leading-none">›</button>
+        </div>
         <div class="grid grid-cols-7 gap-0.5 mb-1">
           <div class="text-center text-[11px] text-gray-400 font-medium py-0.5" data-i18n="calWd0">월</div>
           <div class="text-center text-[11px] text-gray-400 font-medium py-0.5" data-i18n="calWd1">화</div>
@@ -132,7 +136,7 @@
       </div>
 
       <div class="bg-white rounded-xl shadow p-3">
-        <p class="text-sm font-bold mb-2"><span data-i18n="upcomingTitle">임박 교환</span> <span id="res-count" class="text-xs text-gray-400 font-normal ml-1"></span></p>
+        <p class="text-sm font-bold mb-2"><span data-i18n="upcomingTitle">예정된 교환</span> <span id="res-count" class="text-xs text-gray-400 font-normal ml-1"></span></p>
         <div id="upcoming-list" class="divide-y divide-gray-100"></div>
         <p id="upcoming-empty" class="text-center text-gray-400 py-4 text-sm hidden" data-i18n="upcomingEmpty">활성 예약이 없습니다.</p>
       </div>
