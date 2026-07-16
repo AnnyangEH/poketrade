@@ -1,7 +1,7 @@
 /* ════════════════════════════════════════
    예약 / 달력 — dexId 기반 교환 예약 (받을 포켓몬 / 줄 포켓몬)
 ════════════════════════════════════════ */
-import { pokemonIndex, inventory, saveInventory, reservations, saveReservations } from './app.js';
+import { fullDex, inventory, saveInventory, reservations, saveReservations } from './app.js';
 import { t } from './i18n.js';
 
 /* ════════════════════════════════════════
@@ -12,7 +12,7 @@ function spriteUrl(dexId, shiny) {
   return `${encodeURI(POKEMINERS_BASE)}/pm${dexId}${shiny ? '.s' : ''}.icon.png`;
 }
 function pokemonName(dexId) {
-  const p = pokemonIndex.find(x => x.dexId === Number(dexId));
+  const p = fullDex.find(x => x.dexId === Number(dexId));
   return p ? p.name_ko : `#${dexId}`;
 }
 
@@ -83,7 +83,7 @@ function wirePokemonPicker(inputId, resultsId) {
     results.innerHTML = '';
     if (!q) { results.classList.add('hidden'); return; }
 
-    const matches = pokemonIndex.filter(p =>
+    const matches = fullDex.filter(p =>
       p.name_ko.toLowerCase().includes(q) ||
       p.name_en.toLowerCase().includes(q) ||
       String(p.dexId).includes(q)
@@ -143,7 +143,7 @@ export function initReservationForm() {
 }
 
 window.addReservation = () => {
-  const date    = document.getElementById('res-date').value;
+  const date    = document.getElementById('res-date').value.trim();
   const buyer   = document.getElementById('res-buyer').value.trim();
   const receiveDexId = receivePicker && receivePicker.getDexId();
   const giveDexId    = givePicker && givePicker.getDexId();
@@ -152,7 +152,7 @@ window.addReservation = () => {
   const isGuaranteedLucky = document.getElementById('res-guaranteed-lucky').checked;
   const isLuckyTrinket    = document.getElementById('res-lucky-trinket').checked;
 
-  if (!date)  { alert(t('alertDate')); return; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date + 'T00:00:00').getTime())) { alert(t('alertDate')); return; }
   if (!buyer) { alert(t('alertBuyer')); return; }
   if (!receiveDexId) { alert(t('alertReceive')); return; }
   if (!giveDexId)    { alert(t('alertGive')); return; }
@@ -222,6 +222,14 @@ window.cancelReservation = id => {
   renderReservations();
 };
 
+window.resetAllReservations = () => {
+  if (!confirm(t('confirmResetAll'))) return;
+  reservations.length = 0;
+  saveReservations();
+  renderReservations();
+  closeSettings();
+};
+
 /* ════════════════════════════════════════
    확반(Guaranteed Lucky) 연도별 사용 횟수
    포켓몬고 자체에는 이 카운트가 안 보여서 직접 추적
@@ -244,6 +252,7 @@ function renderGuaranteedLuckyCount() {
 export function renderReservations() {
   renderCalendar();
   renderUpcomingList();
+  renderCompletedList();
   renderGuaranteedLuckyCount();
 }
 
@@ -368,6 +377,46 @@ function renderUpcomingList() {
       <div class="flex flex-col gap-1 flex-shrink-0 pt-0.5">
         <button onclick="completeReservation('${r.id}')"
           class="text-[11px] bg-green-50 hover:bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium whitespace-nowrap">${t('btnComplete')}</button>
+        <button onclick="cancelReservation('${r.id}')"
+          class="text-[11px] bg-gray-50 hover:bg-gray-100 text-gray-500 px-2 py-0.5 rounded whitespace-nowrap">${t('btnCancel')}</button>
+      </div>`;
+    container.appendChild(el);
+  });
+}
+
+function renderCompletedList() {
+  const container = document.getElementById('completed-list');
+  const empty     = document.getElementById('completed-empty');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const completed = reservations
+    .filter(r => r.status === '완료')
+    .sort((a, b) => b.tradeDate.localeCompare(a.tradeDate))
+    .slice(0, 20);
+
+  const countEl = document.getElementById('completed-count');
+  if (countEl) countEl.textContent = completed.length ? `(${completed.length}건)` : '';
+
+  if (completed.length === 0) { empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  completed.forEach(r => {
+    const receiveText = r.receiveMemo ? `${pokemonName(r.receiveDexId)} (${r.receiveMemo})` : pokemonName(r.receiveDexId);
+    const giveText    = r.giveMemo ? `${pokemonName(r.giveDexId)} (${r.giveMemo})` : pokemonName(r.giveDexId);
+
+    const el = document.createElement('div');
+    el.className = 'py-2 flex items-start justify-between gap-2';
+    el.innerHTML = `
+      <div class="flex-1 min-w-0">
+        <p class="text-gray-600 text-sm leading-snug">
+          <span class="font-mono font-bold text-xs mr-0.5">${formatDateKR(r.tradeDate)}</span>
+          <span class="font-medium ml-1">${t('receiveLabel')}: ${receiveText}</span>${badgeTags(r)}
+          <span class="text-gray-400"> / ${t('giveLabel')}: ${giveText}</span>
+        </p>
+        <p class="text-gray-400 text-xs mt-0.5 opacity-80">${t('buyerLabel')}: ${r.buyer}</p>
+      </div>
+      <div class="flex-shrink-0 pt-0.5">
         <button onclick="cancelReservation('${r.id}')"
           class="text-[11px] bg-gray-50 hover:bg-gray-100 text-gray-500 px-2 py-0.5 rounded whitespace-nowrap">${t('btnCancel')}</button>
       </div>`;

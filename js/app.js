@@ -1,13 +1,9 @@
 // DEPRECATED 2026-07-16 - 예약 시스템 복구로 인해 재고 그리드 관련 부분만 주석처리
 /* ════════════════════════════════════════
    전역 상태 / 탭 라우팅
+   2026-07-16 - Firebase 제거, 전부 로컬 저장(localStorage)으로 전환.
+   로그인 불필요, 기기 밖으로 데이터가 나가지 않음.
 ════════════════════════════════════════ */
-import {
-  auth, db,
-  doc, getDoc, setDoc, onSnapshot,
-  signInAnonymously, onAuthStateChanged,
-  debounced, fsErr
-} from './firebase.js';
 // import { renderInventory } from './inventory.js'; // DEPRECATED 2026-07-16 - 예약 시스템 복구로 인해 주석처리
 import { renderReservations, initReservationForm } from './reservation.js';
 import './i18n.js';
@@ -17,69 +13,46 @@ import './i18n.js';
 ════════════════════════════════════════ */
 export let pokemonIndex = [];
 export let backgrounds  = [];
+export let fullDex      = []; // 전체 1~1025 도감 (dexId, name_ko, name_en) — 예약 폼의 포켓몬 검색용
 const staticDataReady = Promise.all([
   fetch('data/pokemon-index.json').then(r => r.json()),
-  fetch('data/backgrounds.json').then(r => r.json())
-]).then(([idx, bg]) => { pokemonIndex = idx; backgrounds = bg; });
+  fetch('data/backgrounds.json').then(r => r.json()),
+  fetch('data/pokemon-full-dex.json').then(r => r.json())
+]).then(([idx, bg, full]) => { pokemonIndex = idx; backgrounds = bg; fullDex = full; });
 
 /* ════════════════════════════════════════
-   상태
+   상태 — localStorage에서 읽고 씀 (동기, 즉시)
 ════════════════════════════════════════ */
-export let inventory = {};    // {uid}_{dexId} 개념의 수량 맵 — 이제 dexId 단위 키만 사용 (폼/배경 없음)
-export let reservations = [];
-export let currentUser = null;
+const LOCAL_KEYS = { inventory: 'poketrade_inventory', reservations: 'poketrade_reservations' };
 
-/* ════════════════════════════════════════
-   Firestore 문서 참조
-════════════════════════════════════════ */
-export const invDoc = () => doc(db, 'users', currentUser.uid, 'inventory',    'data');
-export const resDoc = () => doc(db, 'users', currentUser.uid, 'reservations', 'data');
+function loadLocal(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
-/* ════════════════════════════════════════
-   저장
-════════════════════════════════════════ */
-export function saveInventory()    { debounced('inv', () => setDoc(invDoc(), inventory).catch(fsErr('재고'))); }
-export function saveReservations() { debounced('res', () => setDoc(resDoc(), { items: reservations }).catch(fsErr('예약'))); }
+export let inventory = loadLocal(LOCAL_KEYS.inventory, {});    // dexId 단위 수량 맵
+export let reservations = loadLocal(LOCAL_KEYS.reservations, []);
 
-/* ════════════════════════════════════════
-   초기 로드 — 재고는 단일 문서를 1회만 읽는다 (실시간 구독 없음)
-════════════════════════════════════════ */
-async function loadData() {
-  const invSnap = await getDoc(invDoc());
-  inventory = invSnap.exists() ? invSnap.data() : {};
-
-  const resSnap = await getDoc(resDoc());
-  reservations = resSnap.exists() ? (resSnap.data().items || []) : [];
-  onSnapshot(resDoc(), snap => {
-    reservations = snap.exists() ? (snap.data().items || []) : [];
-    if (!document.getElementById('section-reservation').classList.contains('hidden')) renderReservations();
-  }, fsErr('예약 리스너'));
+export function saveInventory() {
+  localStorage.setItem(LOCAL_KEYS.inventory, JSON.stringify(inventory));
+}
+export function saveReservations() {
+  localStorage.setItem(LOCAL_KEYS.reservations, JSON.stringify(reservations));
 }
 
 /* ════════════════════════════════════════
-   인증 — 테스트 빌드: 로그인 화면 없이 익명 인증으로 자동 로그인
+   초기화 — 로그인 없이 정적 데이터만 기다렸다가 바로 앱 표시
 ════════════════════════════════════════ */
-signInAnonymously(auth).catch(e => {
-  console.error('익명 로그인 실패:', e);
-  document.getElementById('auth-error-detail').textContent = `${e.code || ''} ${e.message || e}`;
-  document.getElementById('auth-error').classList.remove('hidden');
-  document.getElementById('auth-error').classList.add('flex');
-});
-
-onAuthStateChanged(auth, async user => {
-  if (user) {
-    currentUser = user;
-    document.getElementById('app').classList.remove('hidden');
-
-    await staticDataReady;
-    await loadData();
-    initReservationForm();
-    switchTab('reservation');
-  } else {
-    currentUser = null;
-    document.getElementById('app').classList.add('hidden');
-  }
-});
+(async () => {
+  await staticDataReady;
+  document.getElementById('app').classList.remove('hidden');
+  initReservationForm();
+  switchTab('reservation');
+})();
 
 /* ════════════════════════════════════════
    탭 전환

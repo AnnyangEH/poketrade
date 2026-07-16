@@ -23,12 +23,14 @@ const TRANSLATIONS = {
     legend0: '0건', legend1: '1건', legend2: '2건+',
     upcomingTitle: '임박 교환',
     upcomingEmpty: '활성 예약이 없습니다.',
+    completedTitle: '완료된 교환',
+    completedEmpty: '완료된 교환이 없습니다.',
     receiveLabel: '받음',
     giveLabel: '줄',
     buyerLabel: '예약자',
     btnComplete: '완료',
     btnCancel: '취소',
-    alertDate: '날짜를 입력해주세요.',
+    alertDate: '날짜를 YYYY-MM-DD 형식으로 입력해주세요.',
     alertBuyer: '예약자를 입력해주세요.',
     alertReceive: '받을 포켓몬을 선택해주세요.',
     alertGive: '줄 포켓몬을 선택해주세요.',
@@ -36,7 +38,9 @@ const TRANSLATIONS = {
     confirmCancel: buyer => `${buyer}님 예약을 취소하시겠습니까?`,
     confirmQuota: names => `이미 ${names}님과 예약 일정이 있습니다. 일정을 추가하시겠습니까?`,
     settingsTitle: '설정',
-    languageLabel: '언어'
+    languageLabel: '언어',
+    btnResetAll: '모든 일정 내역 초기화',
+    confirmResetAll: '정말 모든 일정 내역을 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.'
   },
   en: {
     tabReservation: 'Reservation Schedule',
@@ -59,12 +63,14 @@ const TRANSLATIONS = {
     legend0: '0', legend1: '1', legend2: '2+',
     upcomingTitle: 'Upcoming Exchanges',
     upcomingEmpty: 'No active reservations.',
+    completedTitle: 'Completed Exchanges',
+    completedEmpty: 'No completed exchanges.',
     receiveLabel: 'Receive',
     giveLabel: 'Give',
     buyerLabel: 'Partner',
     btnComplete: 'Confirm',
     btnCancel: 'Cancel',
-    alertDate: 'Please enter a date.',
+    alertDate: 'Please enter a date in YYYY-MM-DD format.',
     alertBuyer: 'Please enter a partner name.',
     alertReceive: 'Please select the Pokémon to receive.',
     alertGive: 'Please select the Pokémon to give.',
@@ -72,7 +78,9 @@ const TRANSLATIONS = {
     confirmCancel: buyer => `Cancel ${buyer}'s reservation?`,
     confirmQuota: names => `You already have a reservation with ${names}. Add this one anyway?`,
     settingsTitle: 'Settings',
-    languageLabel: 'Language'
+    languageLabel: 'Language',
+    btnResetAll: 'Reset All Schedule History',
+    confirmResetAll: 'Are you sure you want to reset all schedule history?\nThis cannot be undone.'
   }
 };
 
