@@ -40,9 +40,11 @@ function truncateText(str, max = 20) {
 }
 function badgeTags(r) {
   const tags = [];
-  if (r.isGuaranteedLucky) tags.push(t('checkGuaranteedLucky'));
-  if (r.isLuckyTrinket)    tags.push(t('checkLuckyTrinket'));
-  return tags.map(tag => `<span class="text-[10px] bg-gray-100 text-gray-600 rounded px-1 ml-0.5">${tag}</span>`).join('');
+  if (r.isGuaranteedLucky) tags.push({ label: t('checkGuaranteedLucky'), bg: 'bg-yellow-100' });
+  if (r.isLuckyTrinket)    tags.push({ label: t('checkLuckyTrinket'),    bg: 'bg-green-100' });
+  if (r.isFriendLucky)     tags.push({ label: t('checkFriendLucky'),     bg: 'bg-blue-100' });
+  if (r.isLuckyTrade)      tags.push({ label: t('checkLuckyTrade'),      bg: 'bg-pink-100' });
+  return tags.map(tag => `<span class="text-[10px] ${tag.bg} text-gray-700 rounded px-1 ml-0.5">${tag.label}</span>`).join('');
 }
 
 /* ════════════════════════════════════════
@@ -84,22 +86,40 @@ function wirePokemonPicker(inputId, resultsId) {
   if (!input || !results) return null;
 
   let selectedDexId = null;
+  let currentMatches = [];
+  let highlightIndex = -1;
+
+  function applyHighlight() {
+    Array.from(results.children).forEach((row, i) => {
+      row.classList.toggle('bg-gray-100', i === highlightIndex);
+    });
+    const activeRow = results.children[highlightIndex];
+    if (activeRow) activeRow.scrollIntoView({ block: 'nearest' });
+  }
+
+  function selectMatch(p) {
+    selectedDexId = p.dexId;
+    input.value = `${p.name_ko} #${p.dexId}`;
+    results.classList.add('hidden');
+    highlightIndex = -1;
+  }
 
   function renderResults(query) {
     const q = query.trim().toLowerCase();
     results.innerHTML = '';
-    if (!q) { results.classList.add('hidden'); return; }
+    highlightIndex = -1;
+    if (!q) { results.classList.add('hidden'); currentMatches = []; return; }
 
-    const matches = fullDex.filter(p =>
+    currentMatches = fullDex.filter(p =>
       p.name_ko.toLowerCase().includes(q) ||
       p.name_en.toLowerCase().includes(q) ||
       String(p.dexId).includes(q)
     ).slice(0, 10);
 
-    if (matches.length === 0) { results.classList.add('hidden'); return; }
+    if (currentMatches.length === 0) { results.classList.add('hidden'); return; }
     results.classList.remove('hidden');
 
-    matches.forEach(p => {
+    currentMatches.forEach(p => {
       const row = document.createElement('div');
       row.className = 'flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 cursor-pointer text-sm';
 
@@ -112,11 +132,7 @@ function wirePokemonPicker(inputId, resultsId) {
       label.textContent = `${p.name_ko} #${p.dexId}`;
 
       row.append(img, label);
-      row.onclick = () => {
-        selectedDexId = p.dexId;
-        input.value = `${p.name_ko} #${p.dexId}`;
-        results.classList.add('hidden');
-      };
+      row.onclick = () => selectMatch(p);
       results.appendChild(row);
     });
   }
@@ -126,13 +142,36 @@ function wirePokemonPicker(inputId, resultsId) {
     renderResults(input.value);
   });
   input.addEventListener('focus', () => renderResults(input.value));
+  input.addEventListener('keydown', e => {
+    if (results.classList.contains('hidden') || currentMatches.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      highlightIndex = Math.min(highlightIndex + 1, currentMatches.length - 1);
+      applyHighlight();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      highlightIndex = Math.max(highlightIndex - 1, 0);
+      applyHighlight();
+    } else if (e.key === 'Enter') {
+      if (highlightIndex >= 0 && currentMatches[highlightIndex]) {
+        e.preventDefault();
+        selectMatch(currentMatches[highlightIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      results.classList.add('hidden');
+      highlightIndex = -1;
+    }
+  });
   document.addEventListener('click', e => {
     if (e.target !== input && !results.contains(e.target)) results.classList.add('hidden');
   });
 
   return {
     getDexId: () => selectedDexId,
-    reset: () => { input.value = ''; selectedDexId = null; results.innerHTML = ''; results.classList.add('hidden'); }
+    reset: () => {
+      input.value = ''; selectedDexId = null; results.innerHTML = '';
+      results.classList.add('hidden'); currentMatches = []; highlightIndex = -1;
+    }
   };
 }
 
@@ -147,6 +186,33 @@ export function initReservationForm() {
   givePicker    = wirePokemonPicker('res-give-search', 'res-give-results');
   populateMemoDatalist('receive');
   populateMemoDatalist('give');
+  wireLuckyCheckboxes();
+}
+
+/* ════════════════════════════════════════
+   확반/반참/베프/반교 체크박스 상호작용
+   - 확반(guaranteed) ↔ 반참(trinket)은 둘 다 반짝 교환을 "보장"하는 방법이라 동시 선택 불가
+   - 둘 중 하나라도 체크하면 반교(luckyTrade, "이 거래는 반짝 교환이다" 총괄 플래그) 자동 체크
+   - 베프(friendLucky, 프렌드 레벨 확률 상승)는 확정이 아니라서 반교를 자동으로 켜지 않음
+════════════════════════════════════════ */
+function wireLuckyCheckboxes() {
+  const guaranteedCb = document.getElementById('res-guaranteed-lucky');
+  const trinketCb    = document.getElementById('res-lucky-trinket');
+  const luckyTradeCb = document.getElementById('res-lucky-trade');
+  if (!guaranteedCb || !trinketCb || !luckyTradeCb) return;
+
+  guaranteedCb.addEventListener('change', () => {
+    if (guaranteedCb.checked) {
+      trinketCb.checked = false;
+      luckyTradeCb.checked = true;
+    }
+  });
+  trinketCb.addEventListener('change', () => {
+    if (trinketCb.checked) {
+      guaranteedCb.checked = false;
+      luckyTradeCb.checked = true;
+    }
+  });
 }
 
 window.addReservation = () => {
@@ -158,8 +224,12 @@ window.addReservation = () => {
   const giveMemo     = document.getElementById('res-give-memo').value.trim();
   const isGuaranteedLucky = document.getElementById('res-guaranteed-lucky').checked;
   const isLuckyTrinket    = document.getElementById('res-lucky-trinket').checked;
+  const isFriendLucky     = document.getElementById('res-friend-lucky').checked;
+  const isLuckyTrade      = document.getElementById('res-lucky-trade').checked;
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date + 'T00:00:00').getTime())) { alert(t('alertDate')); return; }
+  const dateYear = Number(date.slice(0, 4));
+  if (dateYear < 2016 || dateYear > 2036) { alert(t('alertDateRange')); return; }
   if (!buyer) { alert(t('alertBuyer')); return; }
   if (!receiveDexId) { alert(t('alertReceive')); return; }
   if (!giveDexId)    { alert(t('alertGive')); return; }
@@ -183,7 +253,7 @@ window.addReservation = () => {
     tradeDate: date,
     receiveDexId, giveDexId,
     receiveMemo, giveMemo,
-    isGuaranteedLucky, isLuckyTrinket,
+    isGuaranteedLucky, isLuckyTrinket, isFriendLucky, isLuckyTrade,
     status: '활성'
   });
   saveReservations();
@@ -198,6 +268,8 @@ window.addReservation = () => {
   if (givePicker) givePicker.reset();
   document.getElementById('res-guaranteed-lucky').checked = false;
   document.getElementById('res-lucky-trinket').checked = false;
+  document.getElementById('res-friend-lucky').checked = false;
+  document.getElementById('res-lucky-trade').checked = false;
   renderReservations();
 };
 
@@ -225,6 +297,21 @@ window.cancelReservation = id => {
     saveInventory();
   }
   r.status = '취소';
+  saveReservations();
+  renderReservations();
+};
+
+window.deleteCompletedReservation = id => {
+  const r = reservations.find(r => r.id === id);
+  if (!r) return;
+  if (!confirm(t('confirmDeleteCompleted')(r.buyer))) return;
+
+  if (inventory[r.giveDexId]) {
+    inventory[r.giveDexId].qty = (inventory[r.giveDexId].qty || 0) + 1;
+    saveInventory();
+  }
+  const idx = reservations.indexOf(r);
+  if (idx !== -1) reservations.splice(idx, 1);
   saveReservations();
   renderReservations();
 };
@@ -445,8 +532,8 @@ function renderCompletedList() {
         <p class="text-gray-400 text-xs mt-0.5 opacity-80">${t('buyerLabel')}: ${r.buyer}</p>
       </div>
       <div class="flex-shrink-0 pt-0.5">
-        <button onclick="cancelReservation('${r.id}')"
-          class="text-[11px] bg-gray-50 hover:bg-gray-100 text-gray-500 px-2 py-0.5 rounded whitespace-nowrap">${t('btnCancel')}</button>
+        <button onclick="deleteCompletedReservation('${r.id}')"
+          class="text-[11px] bg-gray-50 hover:bg-gray-100 text-gray-500 px-2 py-0.5 rounded whitespace-nowrap">${t('btnDelete')}</button>
       </div>`;
     container.appendChild(el);
   });
