@@ -24,7 +24,7 @@
     <div class="bg-white shadow-sm sticky top-0 z-20">
       <div class="max-w-3xl mx-auto px-3">
         <div class="relative">
-          <h1 class="text-lg font-extrabold text-center pt-3 pb-1 tracking-tight text-blue-700">⚡ Pokémon GO Scheduler</h1>
+          <h1 class="text-lg font-extrabold text-center pt-3 pb-1 tracking-tight text-blue-700">Pokémon GO Scheduler</h1>
           <button onclick="openSettings()" class="absolute right-0 top-2.5 text-gray-400 hover:text-gray-600 text-lg px-1">⚙️</button>
         </div>
         <div class="flex">
@@ -32,7 +32,7 @@
           DEPRECATED 2026-07-16 - 예약 시스템 복구로 인해 주석처리
           <button onclick="switchTab('inventory')"   id="tab-inventory"   class="tab-btn active flex-1 py-2.5 text-xs font-semibold">📦 재고</button>
           -->
-          <button onclick="switchTab('reservation')" id="tab-reservation" class="tab-btn active flex-1 py-2.5 text-xs font-semibold" data-i18n="tabReservation">📅 예약</button>
+          <button onclick="switchTab('reservation')" id="tab-reservation" class="tab-btn active flex-1 py-2.5 text-xs font-semibold" data-i18n="tabReservation">예약 일정</button>
         </div>
       </div>
     </div>
@@ -105,13 +105,13 @@
         </div>
         <div class="flex gap-4 pt-1">
           <label class="flex flex-col items-center gap-0.5 text-sm">
-            <span class="text-[10px] text-gray-400 h-3"></span>
+            <span id="guaranteed-lucky-count" class="text-[10px] text-gray-400 h-3"></span>
             <span class="flex items-center gap-1.5">
               <input type="checkbox" id="res-guaranteed-lucky" class="accent-yellow-500"><span data-i18n="checkGuaranteedLucky">확반</span>
             </span>
           </label>
           <label class="flex flex-col items-center gap-0.5 text-sm">
-            <span id="lucky-trinket-count" class="text-[10px] text-gray-400 h-3"></span>
+            <span class="text-[10px] text-gray-400 h-3"></span>
             <span class="flex items-center gap-1.5">
               <input type="checkbox" id="res-lucky-trinket" class="accent-green-500"><span data-i18n="checkLuckyTrinket">반참</span>
             </span>
@@ -140,7 +140,7 @@
       </div>
 
       <div class="bg-white rounded-xl shadow p-3">
-        <p class="text-sm font-bold mb-2"><span data-i18n="upcomingTitle">📋 임박 예약</span> <span id="res-count" class="text-xs text-gray-400 font-normal ml-1"></span></p>
+        <p class="text-sm font-bold mb-2"><span data-i18n="upcomingTitle">임박 교환</span> <span id="res-count" class="text-xs text-gray-400 font-normal ml-1"></span></p>
         <div id="upcoming-list" class="divide-y divide-gray-100"></div>
         <p id="upcoming-empty" class="text-center text-gray-400 py-4 text-sm hidden" data-i18n="upcomingEmpty">활성 예약이 없습니다.</p>
       </div>

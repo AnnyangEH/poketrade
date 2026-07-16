@@ -3,7 +3,7 @@
 ════════════════════════════════════════ */
 const TRANSLATIONS = {
   ko: {
-    tabReservation: '📅 예약',
+    tabReservation: '예약 일정',
     formTitle: '예약 추가',
     labelDate: '날짜',
     labelBuyer: '예약자',
@@ -21,7 +21,7 @@ const TRANSLATIONS = {
     weekDays: ['일', '월', '화', '수', '목', '금', '토'],
     calWd0: '월', calWd1: '화', calWd2: '수', calWd3: '목', calWd4: '금', calWd5: '토', calWd6: '일',
     legend0: '0건', legend1: '1건', legend2: '2건+',
-    upcomingTitle: '📋 임박 예약',
+    upcomingTitle: '임박 교환',
     upcomingEmpty: '활성 예약이 없습니다.',
     receiveLabel: '받음',
     giveLabel: '줄',
@@ -32,14 +32,14 @@ const TRANSLATIONS = {
     alertBuyer: '예약자를 입력해주세요.',
     alertReceive: '받을 포켓몬을 선택해주세요.',
     alertGive: '줄 포켓몬을 선택해주세요.',
-    alertQuota: '해당 날짜 특교 한도 초과',
     confirmComplete: buyer => `${buyer}님 예약 완료 처리?\n→ 보관함에서 줄 포켓몬 수량이 1개 차감됩니다.`,
     confirmCancel: buyer => `${buyer}님 예약을 취소하시겠습니까?`,
+    confirmQuota: names => `이미 ${names}님과 예약 일정이 있습니다. 일정을 추가하시겠습니까?`,
     settingsTitle: '설정',
     languageLabel: '언어'
   },
   en: {
-    tabReservation: '📅 Reservations',
+    tabReservation: 'Reservation Schedule',
     formTitle: 'Add Reservation',
     labelDate: 'Date',
     labelBuyer: 'Partner',
@@ -57,7 +57,7 @@ const TRANSLATIONS = {
     weekDays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
     calWd0: 'Mon', calWd1: 'Tue', calWd2: 'Wed', calWd3: 'Thu', calWd4: 'Fri', calWd5: 'Sat', calWd6: 'Sun',
     legend0: '0', legend1: '1', legend2: '2+',
-    upcomingTitle: '📋 Upcoming',
+    upcomingTitle: 'Upcoming Exchanges',
     upcomingEmpty: 'No active reservations.',
     receiveLabel: 'Receive',
     giveLabel: 'Give',
@@ -68,9 +68,9 @@ const TRANSLATIONS = {
     alertBuyer: 'Please enter a partner name.',
     alertReceive: 'Please select the Pokémon to receive.',
     alertGive: 'Please select the Pokémon to give.',
-    alertQuota: 'Daily special-trade limit exceeded',
     confirmComplete: buyer => `Confirm reservation for ${buyer}?\n→ 1 will be deducted from the given Pokémon's inventory.`,
     confirmCancel: buyer => `Cancel ${buyer}'s reservation?`,
+    confirmQuota: names => `You already have a reservation with ${names}. Add this one anyway?`,
     settingsTitle: 'Settings',
     languageLabel: 'Language'
   }

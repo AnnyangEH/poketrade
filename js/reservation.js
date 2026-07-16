@@ -162,9 +162,12 @@ window.addReservation = () => {
   const isWeekend = dow === 0 || dow === 6;
   if (!isWeekend) {
     const isFriday = dow === 5;
-    const maxCount = isFriday ? 2 : 1;
-    const curCount = reservations.filter(r => r.tradeDate === date && r.status !== '취소').length;
-    if (curCount >= maxCount) { alert(t('alertQuota')); return; }
+    const maxCount = isFriday ? 3 : 1;
+    const existing = reservations.filter(r => r.tradeDate === date && r.status !== '취소');
+    if (existing.length >= maxCount) {
+      const names = [...new Set(existing.map(r => r.buyer))].join(', ');
+      if (!confirm(t('confirmQuota')(names))) return;
+    }
   }
 
   reservations.push({
@@ -220,15 +223,15 @@ window.cancelReservation = id => {
 };
 
 /* ════════════════════════════════════════
-   반참(Lucky Trinket) 연도별 사용 횟수
+   확반(Guaranteed Lucky) 연도별 사용 횟수
    포켓몬고 자체에는 이 카운트가 안 보여서 직접 추적
 ════════════════════════════════════════ */
-function renderLuckyTrinketCount() {
-  const el = document.getElementById('lucky-trinket-count');
+function renderGuaranteedLuckyCount() {
+  const el = document.getElementById('guaranteed-lucky-count');
   if (!el) return;
   const year = new Date().getFullYear();
   const count = reservations.filter(r =>
-    r.isLuckyTrinket &&
+    r.isGuaranteedLucky &&
     r.status !== '취소' &&
     r.tradeDate && new Date(r.tradeDate + 'T00:00:00').getFullYear() === year
   ).length;
@@ -241,7 +244,7 @@ function renderLuckyTrinketCount() {
 export function renderReservations() {
   renderCalendar();
   renderUpcomingList();
-  renderLuckyTrinketCount();
+  renderGuaranteedLuckyCount();
 }
 
 window.addEventListener('languagechange', () => renderReservations());
@@ -287,7 +290,7 @@ function renderCalendar() {
     const isSat     = dayOfWeek === 6;
     const isSun     = dayOfWeek === 0;
     const isWeekend = isSat || isSun;
-    const exceeded  = !isWeekend && count > (isFriday ? 2 : 1);
+    const exceeded  = !isWeekend && count > (isFriday ? 3 : 1);
 
     const cell = document.createElement('div');
     cell.className = 'cal-cell rounded-lg text-center py-1 px-0.5 relative flex flex-col items-center justify-center gap-px cursor-pointer';
