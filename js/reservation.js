@@ -2,8 +2,7 @@
    예약 / 달력 — dexId 기반 교환 예약 (받을 포켓몬 / 줄 포켓몬)
 ════════════════════════════════════════ */
 import { pokemonIndex, inventory, saveInventory, reservations, saveReservations } from './app.js';
-
-const WEEK_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+import { t } from './i18n.js';
 
 /* ════════════════════════════════════════
    이미지 — PokeMiners 아이콘, 없으면 텍스트로 대체
@@ -30,14 +29,42 @@ function getDday(dateStr) {
 }
 function formatDateKR(dateStr) {
   const d = new Date(dateStr + 'T00:00:00');
-  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}(${WEEK_DAYS[d.getDay()]})`;
+  return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}(${t('weekDays')[d.getDay()]})`;
 }
 function badgeTags(r) {
   const tags = [];
-  if (r.isGuaranteedLucky) tags.push('확반');
-  if (r.isLuckyTrinket)    tags.push('반참');
-  if (r.isShiny)           tags.push('이로치');
-  return tags.map(t => `<span class="text-[10px] bg-gray-100 text-gray-600 rounded px-1 ml-0.5">${t}</span>`).join('');
+  if (r.isGuaranteedLucky) tags.push(t('checkGuaranteedLucky'));
+  if (r.isLuckyTrinket)    tags.push(t('checkLuckyTrinket'));
+  return tags.map(tag => `<span class="text-[10px] bg-gray-100 text-gray-600 rounded px-1 ml-0.5">${tag}</span>`).join('');
+}
+
+/* ════════════════════════════════════════
+   메모 자동완성 히스토리 (localStorage)
+════════════════════════════════════════ */
+const MEMO_HISTORY_KEYS = { receive: 'poketrade_receive_memo_history', give: 'poketrade_give_memo_history' };
+
+function loadMemoHistory(side) {
+  try { return JSON.parse(localStorage.getItem(MEMO_HISTORY_KEYS[side])) || []; }
+  catch { return []; }
+}
+function saveMemoHistory(side, memo) {
+  if (!memo) return;
+  let list = loadMemoHistory(side).filter(m => m !== memo);
+  list.unshift(memo);
+  list = list.slice(0, 20);
+  localStorage.setItem(MEMO_HISTORY_KEYS[side], JSON.stringify(list));
+  populateMemoDatalist(side);
+}
+function populateMemoDatalist(side) {
+  const listId = side === 'receive' ? 'receive-memo-history' : 'give-memo-history';
+  const datalist = document.getElementById(listId);
+  if (!datalist) return;
+  datalist.innerHTML = '';
+  loadMemoHistory(side).forEach(memo => {
+    const opt = document.createElement('option');
+    opt.value = memo;
+    datalist.appendChild(opt);
+  });
 }
 
 /* ════════════════════════════════════════
@@ -111,6 +138,8 @@ let givePicker = null;
 export function initReservationForm() {
   receivePicker = wirePokemonPicker('res-receive-search', 'res-receive-results');
   givePicker    = wirePokemonPicker('res-give-search', 'res-give-results');
+  populateMemoDatalist('receive');
+  populateMemoDatalist('give');
 }
 
 window.addReservation = () => {
@@ -118,14 +147,15 @@ window.addReservation = () => {
   const buyer   = document.getElementById('res-buyer').value.trim();
   const receiveDexId = receivePicker && receivePicker.getDexId();
   const giveDexId    = givePicker && givePicker.getDexId();
+  const receiveMemo  = document.getElementById('res-receive-memo').value.trim();
+  const giveMemo     = document.getElementById('res-give-memo').value.trim();
   const isGuaranteedLucky = document.getElementById('res-guaranteed-lucky').checked;
   const isLuckyTrinket    = document.getElementById('res-lucky-trinket').checked;
-  const isShiny           = document.getElementById('res-shiny').checked;
 
-  if (!date)  { alert('날짜를 입력해주세요.'); return; }
-  if (!buyer) { alert('예약자를 입력해주세요.'); return; }
-  if (!receiveDexId) { alert('받을 포켓몬을 선택해주세요.'); return; }
-  if (!giveDexId)    { alert('줄 포켓몬을 선택해주세요.'); return; }
+  if (!date)  { alert(t('alertDate')); return; }
+  if (!buyer) { alert(t('alertBuyer')); return; }
+  if (!receiveDexId) { alert(t('alertReceive')); return; }
+  if (!giveDexId)    { alert(t('alertGive')); return; }
 
   const d = new Date(date + 'T00:00:00');
   const dow = d.getDay();
@@ -134,7 +164,7 @@ window.addReservation = () => {
     const isFriday = dow === 5;
     const maxCount = isFriday ? 2 : 1;
     const curCount = reservations.filter(r => r.tradeDate === date && r.status !== '취소').length;
-    if (curCount >= maxCount) { alert('해당 날짜 특교 한도 초과'); return; }
+    if (curCount >= maxCount) { alert(t('alertQuota')); return; }
   }
 
   reservations.push({
@@ -142,25 +172,29 @@ window.addReservation = () => {
     buyer,
     tradeDate: date,
     receiveDexId, giveDexId,
-    isGuaranteedLucky, isLuckyTrinket, isShiny,
+    receiveMemo, giveMemo,
+    isGuaranteedLucky, isLuckyTrinket,
     status: '활성'
   });
   saveReservations();
+  saveMemoHistory('receive', receiveMemo);
+  saveMemoHistory('give', giveMemo);
 
   document.getElementById('res-date').value = '';
   document.getElementById('res-buyer').value = '';
+  document.getElementById('res-receive-memo').value = '';
+  document.getElementById('res-give-memo').value = '';
   if (receivePicker) receivePicker.reset();
   if (givePicker) givePicker.reset();
   document.getElementById('res-guaranteed-lucky').checked = false;
   document.getElementById('res-lucky-trinket').checked = false;
-  document.getElementById('res-shiny').checked = false;
   renderReservations();
 };
 
 window.completeReservation = id => {
   const r = reservations.find(r => r.id === id);
   if (!r) return;
-  if (!confirm(`${r.buyer}님 예약 완료 처리?\n→ 보관함에서 줄 포켓몬 수량이 1개 차감됩니다.`)) return;
+  if (!confirm(t('confirmComplete')(r.buyer))) return;
 
   if (!inventory[r.giveDexId]) inventory[r.giveDexId] = { qty: 0 };
   inventory[r.giveDexId].qty = Math.max(0, (inventory[r.giveDexId].qty || 0) - 1);
@@ -174,7 +208,7 @@ window.completeReservation = id => {
 window.cancelReservation = id => {
   const r = reservations.find(r => r.id === id);
   if (!r) return;
-  if (!confirm(`${r.buyer}님 예약을 취소하시겠습니까?`)) return;
+  if (!confirm(t('confirmCancel')(r.buyer))) return;
 
   if (r.status === '완료' && inventory[r.giveDexId]) {
     inventory[r.giveDexId].qty = (inventory[r.giveDexId].qty || 0) + 1;
@@ -186,12 +220,31 @@ window.cancelReservation = id => {
 };
 
 /* ════════════════════════════════════════
+   반참(Lucky Trinket) 연도별 사용 횟수
+   포켓몬고 자체에는 이 카운트가 안 보여서 직접 추적
+════════════════════════════════════════ */
+function renderLuckyTrinketCount() {
+  const el = document.getElementById('lucky-trinket-count');
+  if (!el) return;
+  const year = new Date().getFullYear();
+  const count = reservations.filter(r =>
+    r.isLuckyTrinket &&
+    r.status !== '취소' &&
+    r.tradeDate && new Date(r.tradeDate + 'T00:00:00').getFullYear() === year
+  ).length;
+  el.textContent = `(${count})`;
+}
+
+/* ════════════════════════════════════════
    렌더링
 ════════════════════════════════════════ */
 export function renderReservations() {
   renderCalendar();
   renderUpcomingList();
+  renderLuckyTrinketCount();
 }
+
+window.addEventListener('languagechange', () => renderReservations());
 
 function renderCalendar() {
   const grid = document.getElementById('cal-grid');
@@ -205,11 +258,10 @@ function renderCalendar() {
   startDate.setDate(today.getDate() + offset);
 
   const countMap = {};
-  const shinyMap = {}, guaranteedLuckyMap = {}, luckyTrinketMap = {};
+  const guaranteedLuckyMap = {}, luckyTrinketMap = {};
   reservations.filter(r => r.status !== '취소').forEach(r => {
     if (!r.tradeDate) return;
     countMap[r.tradeDate] = (countMap[r.tradeDate] || 0) + 1;
-    if (r.isShiny)           shinyMap[r.tradeDate] = true;
     if (r.isGuaranteedLucky) guaranteedLuckyMap[r.tradeDate] = true;
     if (r.isLuckyTrinket)    luckyTrinketMap[r.tradeDate] = true;
   });
@@ -238,7 +290,7 @@ function renderCalendar() {
     const exceeded  = !isWeekend && count > (isFriday ? 2 : 1);
 
     const cell = document.createElement('div');
-    cell.className = 'cal-cell rounded-lg text-center py-1 px-0.5 relative flex flex-col items-center justify-center gap-px';
+    cell.className = 'cal-cell rounded-lg text-center py-1 px-0.5 relative flex flex-col items-center justify-center gap-px cursor-pointer';
 
     if (isPast)         cell.style.cssText = 'background:#f9fafb;opacity:0.45';
     else if (count === 0) cell.style.background = '#f3f4f6';
@@ -258,10 +310,13 @@ function renderCalendar() {
     const countHtml  = count > 0
       ? `<span class="text-[9px] leading-none ${exceeded ? 'text-red-700 font-bold' : 'text-gray-500'}">${exceeded ? '!' : count}건</span>`
       : '';
-    const shinyHtml = shinyMap[dateStr] ? '<span class="absolute top-0 right-0.5 text-[9px] leading-none">⭐</span>' : '';
     const trinketHtml = luckyTrinketMap[dateStr] ? '<span class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-green-500"></span>' : '';
 
-    cell.innerHTML = `${shinyHtml}<span class="${dayColor} text-[11px] leading-tight">${displayDay}</span>${countHtml}${trinketHtml}`;
+    cell.innerHTML = `<span class="${dayColor} text-[11px] leading-tight">${displayDay}</span>${countHtml}${trinketHtml}`;
+    cell.onclick = () => {
+      const dateInput = document.getElementById('res-date');
+      if (dateInput) dateInput.value = dateStr;
+    };
     grid.appendChild(cell);
   }
 }
@@ -292,6 +347,9 @@ function renderUpcomingList() {
     else if (dday <= 7)  { colorClass = 'text-orange-600';ddayLabel = `D-${dday}`; }
     else                 { colorClass = 'text-gray-600';  ddayLabel = `D-${dday}`; }
 
+    const receiveText = r.receiveMemo ? `${pokemonName(r.receiveDexId)} (${r.receiveMemo})` : pokemonName(r.receiveDexId);
+    const giveText    = r.giveMemo ? `${pokemonName(r.giveDexId)} (${r.giveMemo})` : pokemonName(r.giveDexId);
+
     const boldClass = dday === 0 ? 'font-bold' : '';
     const el = document.createElement('div');
     el.className = `py-2 flex items-start justify-between gap-2 ${dday < 0 ? 'opacity-60' : ''}`;
@@ -299,16 +357,16 @@ function renderUpcomingList() {
       <div class="flex-1 min-w-0">
         <p class="${colorClass} ${boldClass} text-sm leading-snug">
           <span class="font-mono font-bold text-xs mr-0.5">[${ddayLabel}]</span>${formatDateKR(r.tradeDate)}
-          <span class="font-medium ml-1">받음: ${pokemonName(r.receiveDexId)}</span>${badgeTags(r)}
-          <span class="text-gray-400"> / 줄: ${pokemonName(r.giveDexId)}</span>
+          <span class="font-medium ml-1">${t('receiveLabel')}: ${receiveText}</span>${badgeTags(r)}
+          <span class="text-gray-400"> / ${t('giveLabel')}: ${giveText}</span>
         </p>
-        <p class="${colorClass} text-xs mt-0.5 opacity-80">예약자: ${r.buyer}</p>
+        <p class="${colorClass} text-xs mt-0.5 opacity-80">${t('buyerLabel')}: ${r.buyer}</p>
       </div>
       <div class="flex flex-col gap-1 flex-shrink-0 pt-0.5">
         <button onclick="completeReservation('${r.id}')"
-          class="text-[11px] bg-green-50 hover:bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium whitespace-nowrap">완료</button>
+          class="text-[11px] bg-green-50 hover:bg-green-100 text-green-700 px-2 py-0.5 rounded font-medium whitespace-nowrap">${t('btnComplete')}</button>
         <button onclick="cancelReservation('${r.id}')"
-          class="text-[11px] bg-gray-50 hover:bg-gray-100 text-gray-500 px-2 py-0.5 rounded whitespace-nowrap">취소</button>
+          class="text-[11px] bg-gray-50 hover:bg-gray-100 text-gray-500 px-2 py-0.5 rounded whitespace-nowrap">${t('btnCancel')}</button>
       </div>`;
     container.appendChild(el);
   });

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>포켓몬GO 거래 관리</title>
+  <title>Pokémon GO Scheduler</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -24,14 +24,15 @@
     <div class="bg-white shadow-sm sticky top-0 z-20">
       <div class="max-w-3xl mx-auto px-3">
         <div class="relative">
-          <h1 class="text-lg font-extrabold text-center pt-3 pb-1 tracking-tight text-blue-700">⚡ 포켓몬GO 거래 관리</h1>
+          <h1 class="text-lg font-extrabold text-center pt-3 pb-1 tracking-tight text-blue-700">⚡ Pokémon GO Scheduler</h1>
+          <button onclick="openSettings()" class="absolute right-0 top-2.5 text-gray-400 hover:text-gray-600 text-lg px-1">⚙️</button>
         </div>
         <div class="flex">
           <!--
           DEPRECATED 2026-07-16 - 예약 시스템 복구로 인해 주석처리
           <button onclick="switchTab('inventory')"   id="tab-inventory"   class="tab-btn active flex-1 py-2.5 text-xs font-semibold">📦 재고</button>
           -->
-          <button onclick="switchTab('reservation')" id="tab-reservation" class="tab-btn active flex-1 py-2.5 text-xs font-semibold">📅 예약</button>
+          <button onclick="switchTab('reservation')" id="tab-reservation" class="tab-btn active flex-1 py-2.5 text-xs font-semibold" data-i18n="tabReservation">📅 예약</button>
         </div>
       </div>
     </div>
@@ -67,70 +68,100 @@
     <!-- 예약 탭 -->
     <div id="section-reservation" class="section max-w-3xl mx-auto px-3 py-4 space-y-4">
       <div class="bg-white rounded-xl shadow p-4 space-y-2">
-        <p class="font-bold text-sm mb-1">예약 추가</p>
+        <p class="font-bold text-sm mb-1" data-i18n="formTitle">예약 추가</p>
         <div class="grid grid-cols-2 gap-2">
           <div class="flex flex-col gap-0.5">
-            <label class="text-xs text-gray-500">날짜</label>
+            <label class="text-xs text-gray-500" data-i18n="labelDate">날짜</label>
             <input type="date" id="res-date" class="border rounded-lg px-2 py-1.5 text-sm w-full">
           </div>
           <div class="flex flex-col gap-0.5">
-            <label class="text-xs text-gray-500">예약자</label>
-            <input type="text" id="res-buyer" placeholder="예약자 이름" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+            <label class="text-xs text-gray-500" data-i18n="labelBuyer">예약자</label>
+            <input type="text" id="res-buyer" placeholder="예약자 이름" data-i18n-placeholder="placeholderBuyer" class="border rounded-lg px-2 py-1.5 text-sm w-full">
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div class="flex flex-col gap-0.5 relative">
-            <label class="text-xs text-gray-500">받을 포켓몬</label>
-            <input type="text" id="res-receive-search" placeholder="이름/번호 검색" class="border rounded-lg px-2 py-1.5 text-sm w-full" autocomplete="off">
+            <label class="text-xs text-gray-500" data-i18n="labelReceive">받을 포켓몬</label>
+            <input type="text" id="res-receive-search" placeholder="이름/번호 검색" data-i18n-placeholder="placeholderSearch" class="border rounded-lg px-2 py-1.5 text-sm w-full" autocomplete="off">
             <div id="res-receive-results" class="hidden absolute top-full left-0 right-0 mt-1 z-10 bg-white border rounded-lg shadow max-h-56 overflow-y-auto"></div>
           </div>
           <div class="flex flex-col gap-0.5 relative">
-            <label class="text-xs text-gray-500">줄 포켓몬</label>
-            <input type="text" id="res-give-search" placeholder="이름/번호 검색" class="border rounded-lg px-2 py-1.5 text-sm w-full" autocomplete="off">
+            <label class="text-xs text-gray-500" data-i18n="labelGive">줄 포켓몬</label>
+            <input type="text" id="res-give-search" placeholder="이름/번호 검색" data-i18n-placeholder="placeholderSearch" class="border rounded-lg px-2 py-1.5 text-sm w-full" autocomplete="off">
             <div id="res-give-results" class="hidden absolute top-full left-0 right-0 mt-1 z-10 bg-white border rounded-lg shadow max-h-56 overflow-y-auto"></div>
           </div>
         </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="flex flex-col gap-0.5">
+            <label class="text-xs text-gray-500" data-i18n="labelReceiveMemo">받을 포켓몬 메모</label>
+            <input type="text" id="res-receive-memo" list="receive-memo-history" placeholder="예: 고페 배경 이로치" data-i18n-placeholder="placeholderMemo" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+            <datalist id="receive-memo-history"></datalist>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            <label class="text-xs text-gray-500" data-i18n="labelGiveMemo">줄 포켓몬 메모</label>
+            <input type="text" id="res-give-memo" list="give-memo-history" placeholder="예: 고페 배경 이로치" data-i18n-placeholder="placeholderMemo" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+            <datalist id="give-memo-history"></datalist>
+          </div>
+        </div>
         <div class="flex gap-4 pt-1">
-          <label class="flex items-center gap-1.5 text-sm">
-            <input type="checkbox" id="res-guaranteed-lucky" class="accent-yellow-500">확반
+          <label class="flex flex-col items-center gap-0.5 text-sm">
+            <span class="text-[10px] text-gray-400 h-3"></span>
+            <span class="flex items-center gap-1.5">
+              <input type="checkbox" id="res-guaranteed-lucky" class="accent-yellow-500"><span data-i18n="checkGuaranteedLucky">확반</span>
+            </span>
           </label>
-          <label class="flex items-center gap-1.5 text-sm">
-            <input type="checkbox" id="res-lucky-trinket" class="accent-green-500">반참
-          </label>
-          <label class="flex items-center gap-1.5 text-sm">
-            <input type="checkbox" id="res-shiny" class="accent-purple-500">이로치
+          <label class="flex flex-col items-center gap-0.5 text-sm">
+            <span id="lucky-trinket-count" class="text-[10px] text-gray-400 h-3"></span>
+            <span class="flex items-center gap-1.5">
+              <input type="checkbox" id="res-lucky-trinket" class="accent-green-500"><span data-i18n="checkLuckyTrinket">반참</span>
+            </span>
           </label>
         </div>
-        <button onclick="addReservation()" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-bold mt-1">예약 추가</button>
+        <button onclick="addReservation()" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-bold mt-1" data-i18n="btnAddReservation">예약 추가</button>
       </div>
 
       <div class="bg-white rounded-xl shadow p-3">
         <p class="text-sm font-bold mb-2" id="cal-title">달력</p>
         <div class="grid grid-cols-7 gap-0.5 mb-1">
-          <div class="text-center text-[11px] text-gray-400 font-medium py-0.5">월</div>
-          <div class="text-center text-[11px] text-gray-400 font-medium py-0.5">화</div>
-          <div class="text-center text-[11px] text-gray-400 font-medium py-0.5">수</div>
-          <div class="text-center text-[11px] text-gray-400 font-medium py-0.5">목</div>
-          <div class="text-center text-[11px] text-gray-400 font-medium py-0.5">금</div>
-          <div class="text-center text-[11px] text-blue-400 font-medium py-0.5">토</div>
-          <div class="text-center text-[11px] text-red-400 font-medium py-0.5">일</div>
+          <div class="text-center text-[11px] text-gray-400 font-medium py-0.5" data-i18n="calWd0">월</div>
+          <div class="text-center text-[11px] text-gray-400 font-medium py-0.5" data-i18n="calWd1">화</div>
+          <div class="text-center text-[11px] text-gray-400 font-medium py-0.5" data-i18n="calWd2">수</div>
+          <div class="text-center text-[11px] text-gray-400 font-medium py-0.5" data-i18n="calWd3">목</div>
+          <div class="text-center text-[11px] text-gray-400 font-medium py-0.5" data-i18n="calWd4">금</div>
+          <div class="text-center text-[11px] text-blue-400 font-medium py-0.5" data-i18n="calWd5">토</div>
+          <div class="text-center text-[11px] text-red-400 font-medium py-0.5" data-i18n="calWd6">일</div>
         </div>
         <div id="cal-grid" class="grid grid-cols-7 gap-0.5"></div>
         <div class="flex gap-3 mt-2 text-[10px] text-gray-400 justify-end">
-          <span><span style="display:inline-block;width:10px;height:10px;background:#f3f4f6;border-radius:2px;vertical-align:middle"></span> 0건</span>
-          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(239,68,68,0.3);border-radius:2px;vertical-align:middle"></span> 1건</span>
-          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(239,68,68,0.6);border-radius:2px;vertical-align:middle"></span> 2건+</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:#f3f4f6;border-radius:2px;vertical-align:middle"></span> <span data-i18n="legend0">0건</span></span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(239,68,68,0.3);border-radius:2px;vertical-align:middle"></span> <span data-i18n="legend1">1건</span></span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(239,68,68,0.6);border-radius:2px;vertical-align:middle"></span> <span data-i18n="legend2">2건+</span></span>
         </div>
       </div>
 
       <div class="bg-white rounded-xl shadow p-3">
-        <p class="text-sm font-bold mb-2">📋 임박 예약 <span id="res-count" class="text-xs text-gray-400 font-normal ml-1"></span></p>
+        <p class="text-sm font-bold mb-2"><span data-i18n="upcomingTitle">📋 임박 예약</span> <span id="res-count" class="text-xs text-gray-400 font-normal ml-1"></span></p>
         <div id="upcoming-list" class="divide-y divide-gray-100"></div>
-        <p id="upcoming-empty" class="text-center text-gray-400 py-4 text-sm hidden">활성 예약이 없습니다.</p>
+        <p id="upcoming-empty" class="text-center text-gray-400 py-4 text-sm hidden" data-i18n="upcomingEmpty">활성 예약이 없습니다.</p>
       </div>
     </div>
 
   </div><!-- /app -->
+
+  <!-- 설정 모달 -->
+  <div id="settings-modal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4" onclick="if(event.target.id==='settings-modal')closeSettings()">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-xs p-5">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold text-base" data-i18n="settingsTitle">설정</h3>
+        <button onclick="closeSettings()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+      </div>
+      <p class="text-xs text-gray-500 mb-2" data-i18n="languageLabel">언어</p>
+      <div class="flex gap-2">
+        <button id="lang-ko-btn" onclick="setLanguage('ko')" class="flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-200 bg-blue-600 text-white">한국어</button>
+        <button id="lang-en-btn" onclick="setLanguage('en')" class="flex-1 rounded-lg py-2 text-sm font-semibold border border-gray-200 bg-gray-100 text-gray-600">English</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="js/app.js"></script>
 </body>

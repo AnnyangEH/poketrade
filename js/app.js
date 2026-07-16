@@ -10,6 +10,7 @@ import {
 } from './firebase.js';
 // import { renderInventory } from './inventory.js'; // DEPRECATED 2026-07-16 - 예약 시스템 복구로 인해 주석처리
 import { renderReservations, initReservationForm } from './reservation.js';
+import './i18n.js';
 
 /* ════════════════════════════════════════
    정적 데이터 (Pokemon 인덱스 / 배경)
