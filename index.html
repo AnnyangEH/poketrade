@@ -27,15 +27,18 @@
           <h1 class="text-lg font-extrabold text-center pt-3 pb-1 tracking-tight text-blue-700">⚡ 포켓몬GO 거래 관리</h1>
         </div>
         <div class="flex">
-          <button onclick="switchTab('inventory')"   id="tab-inventory"   class="tab-btn active flex-1 py-2.5 text-xs font-semibold">📦 재고</button>
           <!--
-          <button onclick="switchTab('reservation')" id="tab-reservation" class="tab-btn flex-1 py-2.5 text-xs font-semibold">📅 예약</button>
+          DEPRECATED 2026-07-16 - 예약 시스템 복구로 인해 주석처리
+          <button onclick="switchTab('inventory')"   id="tab-inventory"   class="tab-btn active flex-1 py-2.5 text-xs font-semibold">📦 재고</button>
           -->
+          <button onclick="switchTab('reservation')" id="tab-reservation" class="tab-btn active flex-1 py-2.5 text-xs font-semibold">📅 예약</button>
         </div>
       </div>
     </div>
 
-    <!-- 재고 탭 (몬박스 요약 화면) -->
+    <!--
+    DEPRECATED 2026-07-16 - 예약 시스템 복구로 인해 주석처리
+    <!-\- 재고 탭 (몬박스 요약 화면) -\->
     <div id="section-inventory" class="section max-w-3xl mx-auto px-3 py-4">
       <div class="bg-gray-900 text-gray-100 rounded-xl shadow p-4 space-y-2">
         <div class="flex items-center justify-between">
@@ -47,53 +50,56 @@
       </div>
     </div>
 
-    <!--
-    <!-\- 예약 탭 -\->
-    <div id="section-reservation" class="section hidden max-w-3xl mx-auto px-3 py-4 space-y-4">
+    <!-\- 포켓몬 선택 모달 -\->
+    <div id="select-modal" class="hidden fixed inset-0 bg-black/60 z-50 items-center justify-center p-4">
+      <div class="bg-gray-900 text-gray-100 rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <p class="font-bold text-sm">포켓몬 선택</p>
+          <button id="select-modal-close" class="text-gray-400 hover:text-gray-200 text-xl leading-none">×</button>
+        </div>
+        <div id="inventory-filters"></div>
+        <div id="inventory-grid" class="grid grid-cols-6 sm:grid-cols-7 gap-0.5 max-h-[55vh] overflow-y-auto"></div>
+        <p id="inventory-empty" class="text-center text-gray-500 py-10 text-sm hidden">조건에 맞는 항목이 없습니다.</p>
+      </div>
+    </div>
+    -->
+
+    <!-- 예약 탭 -->
+    <div id="section-reservation" class="section max-w-3xl mx-auto px-3 py-4 space-y-4">
       <div class="bg-white rounded-xl shadow p-4 space-y-2">
         <p class="font-bold text-sm mb-1">예약 추가</p>
         <div class="grid grid-cols-2 gap-2">
           <div class="flex flex-col gap-0.5">
-            <label class="text-xs text-gray-500">구매자</label>
-            <input type="text" id="res-buyer" placeholder="구매자 이름" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+            <label class="text-xs text-gray-500">날짜</label>
+            <input type="date" id="res-date" class="border rounded-lg px-2 py-1.5 text-sm w-full">
           </div>
           <div class="flex flex-col gap-0.5">
-            <label class="text-xs text-gray-500">플랫폼</label>
-            <select id="res-platform" class="border rounded-lg px-2 py-1.5 text-sm w-full bg-white">
-              <option value="당근">당근</option>
-              <option value="번개">번개장터</option>
-              <option value="중고">중고나라</option>
-            </select>
+            <label class="text-xs text-gray-500">예약자</label>
+            <input type="text" id="res-buyer" placeholder="예약자 이름" class="border rounded-lg px-2 py-1.5 text-sm w-full">
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2">
-          <div class="flex flex-col gap-0.5">
-            <label class="text-xs text-gray-500">품목 (보관함에서 선택)</label>
-            <select id="res-item" class="border rounded-lg px-2 py-1.5 text-sm w-full bg-white"></select>
+          <div class="flex flex-col gap-0.5 relative">
+            <label class="text-xs text-gray-500">받을 포켓몬</label>
+            <input type="text" id="res-receive-search" placeholder="이름/번호 검색" class="border rounded-lg px-2 py-1.5 text-sm w-full" autocomplete="off">
+            <div id="res-receive-results" class="hidden absolute top-full left-0 right-0 mt-1 z-10 bg-white border rounded-lg shadow max-h-56 overflow-y-auto"></div>
           </div>
-          <div class="flex flex-col gap-0.5">
-            <label class="text-xs text-gray-500">친구시작일</label>
-            <input type="date" id="res-friendStart" onchange="updateTradeDate()" class="border rounded-lg px-2 py-1.5 text-sm w-full">
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div class="flex flex-col gap-0.5">
-            <label class="text-xs text-gray-500">친구타입</label>
-            <select id="res-friendType" onchange="updateTradeDate()" class="border rounded-lg px-2 py-1.5 text-sm w-full bg-white">
-              <option value="">선택</option>
-              <option value="그레이트">그레이트 (+7일)</option>
-              <option value="울트라">울트라 (+30일)</option>
-              <option value="즉시">즉시 (오늘)</option>
-            </select>
-          </div>
-          <div class="flex flex-col gap-0.5">
-            <label class="text-xs text-gray-500">거래예정일 <span class="text-blue-500">(자동계산)</span></label>
-            <input type="date" id="res-tradeDate" class="border rounded-lg px-2 py-1.5 text-sm w-full bg-gray-50">
+          <div class="flex flex-col gap-0.5 relative">
+            <label class="text-xs text-gray-500">줄 포켓몬</label>
+            <input type="text" id="res-give-search" placeholder="이름/번호 검색" class="border rounded-lg px-2 py-1.5 text-sm w-full" autocomplete="off">
+            <div id="res-give-results" class="hidden absolute top-full left-0 right-0 mt-1 z-10 bg-white border rounded-lg shadow max-h-56 overflow-y-auto"></div>
           </div>
         </div>
-        <div class="flex flex-col gap-0.5">
-          <label class="text-xs text-gray-500">메모</label>
-          <input type="text" id="res-notes" placeholder="메모 (선택)" class="border rounded-lg px-2 py-1.5 text-sm w-full">
+        <div class="flex gap-4 pt-1">
+          <label class="flex items-center gap-1.5 text-sm">
+            <input type="checkbox" id="res-guaranteed-lucky" class="accent-yellow-500">확반
+          </label>
+          <label class="flex items-center gap-1.5 text-sm">
+            <input type="checkbox" id="res-lucky-trinket" class="accent-green-500">반참
+          </label>
+          <label class="flex items-center gap-1.5 text-sm">
+            <input type="checkbox" id="res-shiny" class="accent-purple-500">이로치
+          </label>
         </div>
         <button onclick="addReservation()" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 text-sm font-bold mt-1">예약 추가</button>
       </div>
@@ -123,22 +129,8 @@
         <p id="upcoming-empty" class="text-center text-gray-400 py-4 text-sm hidden">활성 예약이 없습니다.</p>
       </div>
     </div>
-    -->
 
   </div><!-- /app -->
-
-  <!-- 포켓몬 선택 모달 -->
-  <div id="select-modal" class="hidden fixed inset-0 bg-black/60 z-50 items-center justify-center p-4">
-    <div class="bg-gray-900 text-gray-100 rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-4 space-y-3">
-      <div class="flex items-center justify-between">
-        <p class="font-bold text-sm">포켓몬 선택</p>
-        <button id="select-modal-close" class="text-gray-400 hover:text-gray-200 text-xl leading-none">×</button>
-      </div>
-      <div id="inventory-filters"></div>
-      <div id="inventory-grid" class="grid grid-cols-6 sm:grid-cols-7 gap-0.5 max-h-[55vh] overflow-y-auto"></div>
-      <p id="inventory-empty" class="text-center text-gray-500 py-10 text-sm hidden">조건에 맞는 항목이 없습니다.</p>
-    </div>
-  </div>
 
   <script type="module" src="js/app.js"></script>
 </body>
