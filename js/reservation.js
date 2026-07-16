@@ -38,11 +38,37 @@ function formatDateShort(dateStr) {
 function truncateText(str, max = 20) {
   return str.length > max ? str.slice(0, max) + '…' : str;
 }
+
+/* ════════════════════════════════════════
+   느슨한 날짜 입력 파싱 — "2026-07-16" 뿐 아니라
+   "20260716"(YYYYMMDD), "260716"(YYMMDD → 20YY년)도 허용
+════════════════════════════════════════ */
+function parseFlexibleDate(raw) {
+  const trimmed = raw.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return isNaN(new Date(trimmed + 'T00:00:00').getTime()) ? null : trimmed;
+  }
+
+  const digits = trimmed.replace(/\D/g, '');
+  let y, m, dd;
+  if (digits.length === 8) {
+    y = digits.slice(0, 4); m = digits.slice(4, 6); dd = digits.slice(6, 8);
+  } else if (digits.length === 6) {
+    y = String(2000 + Number(digits.slice(0, 2))); m = digits.slice(2, 4); dd = digits.slice(4, 6);
+  } else {
+    return null;
+  }
+
+  const dateStr = `${y}-${m}-${dd}`;
+  const parsed = new Date(dateStr + 'T00:00:00');
+  if (isNaN(parsed.getTime())) return null;
+  if (parsed.getFullYear() !== Number(y) || parsed.getMonth() + 1 !== Number(m) || parsed.getDate() !== Number(dd)) return null;
+  return dateStr;
+}
 function badgeTags(r) {
   const tags = [];
   if (r.isGuaranteedLucky) tags.push({ label: t('checkGuaranteedLucky'), bg: 'bg-yellow-100' });
   if (r.isLuckyTrinket)    tags.push({ label: t('checkLuckyTrinket'),    bg: 'bg-green-100' });
-  if (r.isFriendLucky)     tags.push({ label: t('checkFriendLucky'),     bg: 'bg-blue-100' });
   if (r.isLuckyTrade)      tags.push({ label: t('checkLuckyTrade'),      bg: 'bg-pink-100' });
   return tags.map(tag => `<span class="text-[10px] ${tag.bg} text-gray-700 rounded px-1 ml-0.5">${tag.label}</span>`).join('');
 }
@@ -190,10 +216,10 @@ export function initReservationForm() {
 }
 
 /* ════════════════════════════════════════
-   확반/반참/베프/반교 체크박스 상호작용
-   - 확반(guaranteed) ↔ 반참(trinket)은 둘 다 반짝 교환을 "보장"하는 방법이라 동시 선택 불가
-   - 둘 중 하나라도 체크하면 반교(luckyTrade, "이 거래는 반짝 교환이다" 총괄 플래그) 자동 체크
-   - 베프(friendLucky, 프렌드 레벨 확률 상승)는 확정이 아니라서 반교를 자동으로 켜지 않음
+   확반/반참/반교 체크박스 상호작용
+   - 확반(guaranteed) ↔ 반참(trinket)은 동시 선택 불가
+   - 반참을 체크하면 반교(luckyTrade, "이 거래는 반짝 교환이다" 총괄 플래그)가 자동 체크됨
+   - 확반은 반교를 자동 체크하지 않음 (필요하면 수동으로 체크)
 ════════════════════════════════════════ */
 function wireLuckyCheckboxes() {
   const guaranteedCb = document.getElementById('res-guaranteed-lucky');
@@ -202,10 +228,7 @@ function wireLuckyCheckboxes() {
   if (!guaranteedCb || !trinketCb || !luckyTradeCb) return;
 
   guaranteedCb.addEventListener('change', () => {
-    if (guaranteedCb.checked) {
-      trinketCb.checked = false;
-      luckyTradeCb.checked = true;
-    }
+    if (guaranteedCb.checked) trinketCb.checked = false;
   });
   trinketCb.addEventListener('change', () => {
     if (trinketCb.checked) {
@@ -216,7 +239,7 @@ function wireLuckyCheckboxes() {
 }
 
 window.addReservation = () => {
-  const date    = document.getElementById('res-date').value.trim();
+  const rawDate = document.getElementById('res-date').value.trim();
   const buyer   = document.getElementById('res-buyer').value.trim();
   const receiveDexId = receivePicker && receivePicker.getDexId();
   const giveDexId    = givePicker && givePicker.getDexId();
@@ -224,10 +247,10 @@ window.addReservation = () => {
   const giveMemo     = document.getElementById('res-give-memo').value.trim();
   const isGuaranteedLucky = document.getElementById('res-guaranteed-lucky').checked;
   const isLuckyTrinket    = document.getElementById('res-lucky-trinket').checked;
-  const isFriendLucky     = document.getElementById('res-friend-lucky').checked;
   const isLuckyTrade      = document.getElementById('res-lucky-trade').checked;
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date + 'T00:00:00').getTime())) { alert(t('alertDate')); return; }
+  const date = parseFlexibleDate(rawDate);
+  if (!date) { alert(t('alertDate')); return; }
   const dateYear = Number(date.slice(0, 4));
   if (dateYear < 2016 || dateYear > 2036) { alert(t('alertDateRange')); return; }
   if (!buyer) { alert(t('alertBuyer')); return; }
@@ -253,7 +276,7 @@ window.addReservation = () => {
     tradeDate: date,
     receiveDexId, giveDexId,
     receiveMemo, giveMemo,
-    isGuaranteedLucky, isLuckyTrinket, isFriendLucky, isLuckyTrade,
+    isGuaranteedLucky, isLuckyTrinket, isLuckyTrade,
     status: '활성'
   });
   saveReservations();
@@ -268,7 +291,6 @@ window.addReservation = () => {
   if (givePicker) givePicker.reset();
   document.getElementById('res-guaranteed-lucky').checked = false;
   document.getElementById('res-lucky-trinket').checked = false;
-  document.getElementById('res-friend-lucky').checked = false;
   document.getElementById('res-lucky-trade').checked = false;
   renderReservations();
 };
