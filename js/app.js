@@ -59,7 +59,7 @@ function render() {
     const value    = acc[phase.key];
     const complete = value >= phase.max;
 
-    labelEl.textContent   = acc.nickname ? `#${acc.id} · ${acc.nickname}` : `#${acc.id}`;
+    labelEl.textContent   = acc.nickname || '—';
     premiumEl.textContent = `프패 ${acc.premiumPassCount}`;
     countEl.textContent   = `${value}/${phase.max}`;
     barEl.style.width = `${Math.min(100, (value / phase.max) * 100)}%`;
@@ -99,6 +99,7 @@ function buildGrid() {
     card.id = `card-${acc.id}`;
     card.className = 'account-card';
     card.innerHTML = `
+      <span class="account-id-badge">#${acc.id}</span>
       <div class="account-header">
         <span class="account-num" id="label-${acc.id}">#${acc.id}</span>
         <button type="button" class="account-edit-btn" data-role="nickname" title="닉네임 설정">✎</button>
