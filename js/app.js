@@ -7,6 +7,7 @@ const PHASES = {
   morning: { key: 'morningCount', max: 24, label: '오전' },
   evening: { key: 'eveningCount', max: 12, label: '오후' }
 };
+const PREMIUM_PASS_MAX = 999999; // 안전 정수 범위(2^53) 안에서 충분히 여유 있는 상한
 
 const ACCOUNTS_KEY = 'raidpass_accounts';
 const PHASE_KEY    = 'raidpass_active_phase';
@@ -17,7 +18,11 @@ function loadAccounts() {
     if (Array.isArray(parsed) && parsed.length === ACCOUNT_COUNT) {
       parsed.forEach(acc => {
         if (typeof acc.nickname !== 'string') acc.nickname = '';
-        if (typeof acc.premiumPassCount !== 'number' || !Number.isFinite(acc.premiumPassCount)) acc.premiumPassCount = 0;
+        if (typeof acc.premiumPassCount !== 'number' || !Number.isInteger(acc.premiumPassCount) || acc.premiumPassCount < 0) {
+          acc.premiumPassCount = 0;
+        } else if (acc.premiumPassCount > PREMIUM_PASS_MAX) {
+          acc.premiumPassCount = PREMIUM_PASS_MAX;
+        }
       });
       return parsed;
     }
@@ -75,8 +80,12 @@ function editNickname(acc) {
 function editPremiumPass(acc) {
   const input = prompt(`#${acc.id} 프리미엄 패스 개수`, String(acc.premiumPassCount));
   if (input === null) return; // 취소
-  const n = parseInt(input.trim(), 10);
-  if (!Number.isInteger(n) || n < 0) { alert('0 이상의 숫자를 입력해주세요.'); return; }
+  const trimmed = input.trim();
+  // parseInt는 "12abc"→12, "1e10"→1 처럼 뒤에 붙은 문자를 조용히 무시해버려서
+  // 숫자만으로 이루어진 문자열인지 정규식으로 먼저 검증
+  if (!/^\d+$/.test(trimmed)) { alert('숫자만 입력해주세요 (예: 26).'); return; }
+  const n = Number(trimmed);
+  if (n > PREMIUM_PASS_MAX) { alert(`${PREMIUM_PASS_MAX} 이하로 입력해주세요.`); return; }
   acc.premiumPassCount = n;
   saveAccounts();
   render();
