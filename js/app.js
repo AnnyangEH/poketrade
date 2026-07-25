@@ -14,9 +14,12 @@ const PHASE_KEY    = 'raidpass_active_phase';
 function loadAccounts() {
   try {
     const parsed = JSON.parse(localStorage.getItem(ACCOUNTS_KEY));
-    if (Array.isArray(parsed) && parsed.length === ACCOUNT_COUNT) return parsed;
+    if (Array.isArray(parsed) && parsed.length === ACCOUNT_COUNT) {
+      parsed.forEach(acc => { if (typeof acc.nickname !== 'string') acc.nickname = ''; });
+      return parsed;
+    }
   } catch {}
-  return Array.from({ length: ACCOUNT_COUNT }, (_, i) => ({ id: i + 1, morningCount: 0, eveningCount: 0 }));
+  return Array.from({ length: ACCOUNT_COUNT }, (_, i) => ({ id: i + 1, morningCount: 0, eveningCount: 0, nickname: '' }));
 }
 function saveAccounts() {
   localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
@@ -40,18 +43,28 @@ function render() {
   toggleBtn.textContent = `${phase.label} (Max ${phase.max})`;
 
   accounts.forEach(acc => {
-    const card    = document.getElementById(`card-${acc.id}`);
-    const countEl = document.getElementById(`count-${acc.id}`);
-    const barEl   = document.getElementById(`bar-${acc.id}`);
+    const card     = document.getElementById(`card-${acc.id}`);
+    const labelEl  = document.getElementById(`label-${acc.id}`);
+    const countEl  = document.getElementById(`count-${acc.id}`);
+    const barEl    = document.getElementById(`bar-${acc.id}`);
     const value    = acc[phase.key];
     const complete = value >= phase.max;
 
+    labelEl.textContent = acc.nickname ? `#${acc.id} · ${acc.nickname}` : `#${acc.id}`;
     countEl.textContent = `${value}/${phase.max}`;
     barEl.style.width = `${Math.min(100, (value / phase.max) * 100)}%`;
 
     card.classList.toggle('is-selected', selected.has(acc.id) && !complete);
     card.classList.toggle('is-complete', complete);
   });
+}
+
+function editNickname(acc) {
+  const input = prompt(`#${acc.id} 닉네임 (비우면 삭제)`, acc.nickname || '');
+  if (input === null) return; // 취소
+  acc.nickname = input.trim();
+  saveAccounts();
+  render();
 }
 
 function buildGrid() {
@@ -62,15 +75,24 @@ function buildGrid() {
     card.id = `card-${acc.id}`;
     card.className = 'account-card';
     card.innerHTML = `
-      <div class="account-num">#${acc.id}</div>
-      <div class="account-count" id="count-${acc.id}"></div>
+      <div class="account-header">
+        <span class="account-num" id="label-${acc.id}">#${acc.id}</span>
+        <button type="button" class="account-edit-btn" title="닉네임 설정">✎</button>
+      </div>
+      <div class="account-count-row">
+        <span class="account-count" id="count-${acc.id}"></span>
+        <span class="account-done-badge">DONE</span>
+      </div>
       <div class="account-bar-track"><div class="account-bar-fill" id="bar-${acc.id}"></div></div>
-      <div class="account-done-badge">DONE</div>
     `;
     card.addEventListener('click', () => {
       if (selected.has(acc.id)) selected.delete(acc.id);
       else selected.add(acc.id);
       render();
+    });
+    card.querySelector('.account-edit-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      editNickname(acc);
     });
     grid.appendChild(card);
   });
