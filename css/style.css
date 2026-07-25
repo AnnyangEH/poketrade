@@ -39,6 +39,19 @@
 }
 .account-edit-btn:hover { color: #e5e7eb; background: #1f2937; }
 
+.account-premium-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .25rem;
+  margin-bottom: .35rem;
+}
+.account-premium {
+  font-size: .7rem;
+  font-weight: 700;
+  color: #eab308;
+}
+
 .account-count-row {
   display: flex;
   align-items: baseline;

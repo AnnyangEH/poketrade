@@ -15,11 +15,14 @@ function loadAccounts() {
   try {
     const parsed = JSON.parse(localStorage.getItem(ACCOUNTS_KEY));
     if (Array.isArray(parsed) && parsed.length === ACCOUNT_COUNT) {
-      parsed.forEach(acc => { if (typeof acc.nickname !== 'string') acc.nickname = ''; });
+      parsed.forEach(acc => {
+        if (typeof acc.nickname !== 'string') acc.nickname = '';
+        if (typeof acc.premiumPassCount !== 'number' || !Number.isFinite(acc.premiumPassCount)) acc.premiumPassCount = 0;
+      });
       return parsed;
     }
   } catch {}
-  return Array.from({ length: ACCOUNT_COUNT }, (_, i) => ({ id: i + 1, morningCount: 0, eveningCount: 0, nickname: '' }));
+  return Array.from({ length: ACCOUNT_COUNT }, (_, i) => ({ id: i + 1, morningCount: 0, eveningCount: 0, nickname: '', premiumPassCount: 0 }));
 }
 function saveAccounts() {
   localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
@@ -43,15 +46,17 @@ function render() {
   toggleBtn.textContent = `${phase.label} (Max ${phase.max})`;
 
   accounts.forEach(acc => {
-    const card     = document.getElementById(`card-${acc.id}`);
-    const labelEl  = document.getElementById(`label-${acc.id}`);
-    const countEl  = document.getElementById(`count-${acc.id}`);
-    const barEl    = document.getElementById(`bar-${acc.id}`);
+    const card      = document.getElementById(`card-${acc.id}`);
+    const labelEl   = document.getElementById(`label-${acc.id}`);
+    const premiumEl = document.getElementById(`premium-${acc.id}`);
+    const countEl   = document.getElementById(`count-${acc.id}`);
+    const barEl     = document.getElementById(`bar-${acc.id}`);
     const value    = acc[phase.key];
     const complete = value >= phase.max;
 
-    labelEl.textContent = acc.nickname ? `#${acc.id} · ${acc.nickname}` : `#${acc.id}`;
-    countEl.textContent = `${value}/${phase.max}`;
+    labelEl.textContent   = acc.nickname ? `#${acc.id} · ${acc.nickname}` : `#${acc.id}`;
+    premiumEl.textContent = `프패 ${acc.premiumPassCount}`;
+    countEl.textContent   = `${value}/${phase.max}`;
     barEl.style.width = `${Math.min(100, (value / phase.max) * 100)}%`;
 
     card.classList.toggle('is-selected', selected.has(acc.id) && !complete);
@@ -67,6 +72,16 @@ function editNickname(acc) {
   render();
 }
 
+function editPremiumPass(acc) {
+  const input = prompt(`#${acc.id} 프리미엄 패스 개수`, String(acc.premiumPassCount));
+  if (input === null) return; // 취소
+  const n = parseInt(input.trim(), 10);
+  if (!Number.isInteger(n) || n < 0) { alert('0 이상의 숫자를 입력해주세요.'); return; }
+  acc.premiumPassCount = n;
+  saveAccounts();
+  render();
+}
+
 function buildGrid() {
   const grid = document.getElementById('account-grid');
   grid.innerHTML = '';
@@ -77,7 +92,11 @@ function buildGrid() {
     card.innerHTML = `
       <div class="account-header">
         <span class="account-num" id="label-${acc.id}">#${acc.id}</span>
-        <button type="button" class="account-edit-btn" title="닉네임 설정">✎</button>
+        <button type="button" class="account-edit-btn" data-role="nickname" title="닉네임 설정">✎</button>
+      </div>
+      <div class="account-premium-row">
+        <span class="account-premium" id="premium-${acc.id}"></span>
+        <button type="button" class="account-edit-btn" data-role="premium" title="프리미엄 패스 개수 설정">✎</button>
       </div>
       <div class="account-count-row">
         <span class="account-count" id="count-${acc.id}"></span>
@@ -90,9 +109,13 @@ function buildGrid() {
       else selected.add(acc.id);
       render();
     });
-    card.querySelector('.account-edit-btn').addEventListener('click', e => {
+    card.querySelector('[data-role="nickname"]').addEventListener('click', e => {
       e.stopPropagation();
       editNickname(acc);
+    });
+    card.querySelector('[data-role="premium"]').addEventListener('click', e => {
+      e.stopPropagation();
+      editPremiumPass(acc);
     });
     grid.appendChild(card);
   });
