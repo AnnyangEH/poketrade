@@ -1,6 +1,54 @@
-.tab-btn { color: #6b7280; border-bottom: 2px solid transparent; transition: all .2s; }
-.tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
-.chip { background: #f3f4f6; color: #6b7280; transition: all .15s; }
-.chip.active { background: #2563eb; color: white; }
-input[type=number]::-webkit-inner-spin-button { opacity: 1; }
-.cal-cell { min-height: 38px; }
+* { user-select: none; }
+
+.account-card {
+  position: relative;
+  background: #111827;
+  border: 2px solid transparent;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: border-color .12s ease, opacity .12s ease;
+}
+.account-card:hover { border-color: #374151; }
+
+.account-num {
+  font-size: .75rem;
+  font-weight: 700;
+  color: #9ca3af;
+  margin-bottom: .25rem;
+}
+.account-count {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: .5rem;
+  font-variant-numeric: tabular-nums;
+}
+.account-bar-track {
+  width: 100%;
+  height: .4rem;
+  background: #1f2937;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.account-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: #3b82f6;
+  transition: width .15s ease;
+}
+.account-done-badge {
+  display: none;
+  position: absolute;
+  top: .5rem;
+  right: .5rem;
+  font-size: .6rem;
+  font-weight: 800;
+  color: #10b981;
+  letter-spacing: .05em;
+}
+
+.account-card.is-selected { border-color: #ef4444; }
+
+.account-card.is-complete { opacity: .45; border-color: #10b981; }
+.account-card.is-complete .account-bar-fill { background: #10b981; }
+.account-card.is-complete .account-done-badge { display: block; }

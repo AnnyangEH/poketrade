@@ -1,67 +1,125 @@
-// DEPRECATED 2026-07-16 - 예약 시스템 복구로 인해 재고 그리드 관련 부분만 주석처리
 /* ════════════════════════════════════════
-   전역 상태 / 탭 라우팅
-   2026-07-16 - Firebase 제거, 전부 로컬 저장(localStorage)으로 전환.
-   로그인 불필요, 기기 밖으로 데이터가 나가지 않음.
+   레이드 패스 소모량 카운터 — 14개 계정 x 오전/오후 두 페이즈
+   전부 로컬 저장(localStorage), 로그인/서버 없음.
 ════════════════════════════════════════ */
-// import { renderInventory } from './inventory.js'; // DEPRECATED 2026-07-16 - 예약 시스템 복구로 인해 주석처리
-import { renderReservations, initReservationForm } from './reservation.js';
-import './i18n.js';
-
-/* ════════════════════════════════════════
-   정적 데이터 (Pokemon 인덱스 / 배경)
-════════════════════════════════════════ */
-export let pokemonIndex = [];
-export let backgrounds  = [];
-export let fullDex      = []; // 전체 1~1025 도감 (dexId, name_ko, name_en) — 예약 폼의 포켓몬 검색용
-const staticDataReady = Promise.all([
-  fetch('data/pokemon-index.json').then(r => r.json()),
-  fetch('data/backgrounds.json').then(r => r.json()),
-  fetch('data/pokemon-full-dex.json').then(r => r.json())
-]).then(([idx, bg, full]) => { pokemonIndex = idx; backgrounds = bg; fullDex = full; });
-
-/* ════════════════════════════════════════
-   상태 — localStorage에서 읽고 씀 (동기, 즉시)
-════════════════════════════════════════ */
-const LOCAL_KEYS = { inventory: 'poketrade_inventory', reservations: 'poketrade_reservations' };
-
-function loadLocal(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-export let inventory = loadLocal(LOCAL_KEYS.inventory, {});    // dexId 단위 수량 맵
-export let reservations = loadLocal(LOCAL_KEYS.reservations, []);
-
-export function saveInventory() {
-  localStorage.setItem(LOCAL_KEYS.inventory, JSON.stringify(inventory));
-}
-export function saveReservations() {
-  localStorage.setItem(LOCAL_KEYS.reservations, JSON.stringify(reservations));
-}
-
-/* ════════════════════════════════════════
-   초기화 — 로그인 없이 정적 데이터만 기다렸다가 바로 앱 표시
-════════════════════════════════════════ */
-(async () => {
-  await staticDataReady;
-  document.getElementById('app').classList.remove('hidden');
-  initReservationForm();
-  switchTab('reservation');
-})();
-
-/* ════════════════════════════════════════
-   탭 전환
-════════════════════════════════════════ */
-window.switchTab = tab => {
-  document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(`section-${tab}`).classList.remove('hidden');
-  document.getElementById(`tab-${tab}`).classList.add('active');
-  // if (tab === 'inventory')   renderInventory(); // DEPRECATED 2026-07-16 - 예약 시스템 복구로 인해 주석처리
-  if (tab === 'reservation') renderReservations();
+const ACCOUNT_COUNT = 14;
+const PHASES = {
+  morning: { key: 'morningCount', max: 24, label: '오전' },
+  evening: { key: 'eveningCount', max: 12, label: '오후' }
 };
+
+const ACCOUNTS_KEY = 'raidpass_accounts';
+const PHASE_KEY    = 'raidpass_active_phase';
+
+function loadAccounts() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(ACCOUNTS_KEY));
+    if (Array.isArray(parsed) && parsed.length === ACCOUNT_COUNT) return parsed;
+  } catch {}
+  return Array.from({ length: ACCOUNT_COUNT }, (_, i) => ({ id: i + 1, morningCount: 0, eveningCount: 0 }));
+}
+function saveAccounts() {
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+}
+
+let accounts    = loadAccounts();
+let activePhase = localStorage.getItem(PHASE_KEY) === 'evening' ? 'evening' : 'morning';
+const selected  = new Set();
+
+function currentPhase() {
+  return PHASES[activePhase];
+}
+
+/* ════════════════════════════════════════
+   렌더링
+════════════════════════════════════════ */
+function render() {
+  const phase = currentPhase();
+
+  const toggleBtn = document.getElementById('phase-toggle-btn');
+  toggleBtn.textContent = `${phase.label} (Max ${phase.max})`;
+
+  accounts.forEach(acc => {
+    const card    = document.getElementById(`card-${acc.id}`);
+    const countEl = document.getElementById(`count-${acc.id}`);
+    const barEl   = document.getElementById(`bar-${acc.id}`);
+    const value    = acc[phase.key];
+    const complete = value >= phase.max;
+
+    countEl.textContent = `${value}/${phase.max}`;
+    barEl.style.width = `${Math.min(100, (value / phase.max) * 100)}%`;
+
+    card.classList.toggle('is-selected', selected.has(acc.id) && !complete);
+    card.classList.toggle('is-complete', complete);
+  });
+}
+
+function buildGrid() {
+  const grid = document.getElementById('account-grid');
+  grid.innerHTML = '';
+  accounts.forEach(acc => {
+    const card = document.createElement('div');
+    card.id = `card-${acc.id}`;
+    card.className = 'account-card';
+    card.innerHTML = `
+      <div class="account-num">#${acc.id}</div>
+      <div class="account-count" id="count-${acc.id}"></div>
+      <div class="account-bar-track"><div class="account-bar-fill" id="bar-${acc.id}"></div></div>
+      <div class="account-done-badge">DONE</div>
+    `;
+    card.addEventListener('click', () => {
+      if (selected.has(acc.id)) selected.delete(acc.id);
+      else selected.add(acc.id);
+      render();
+    });
+    grid.appendChild(card);
+  });
+}
+
+/* ════════════════════════════════════════
+   선택된 계정 일괄 증감 — 상한 도달 시 해당 계정만 증가 무시
+════════════════════════════════════════ */
+function adjustSelected(delta) {
+  const phase = currentPhase();
+  let changed = false;
+
+  selected.forEach(id => {
+    const acc = accounts.find(a => a.id === id);
+    if (!acc) return;
+    if (delta > 0 && acc[phase.key] >= phase.max) return; // 완료된 계정은 증가 차단
+    acc[phase.key] = Math.max(0, Math.min(phase.max, acc[phase.key] + delta));
+    changed = true;
+  });
+
+  if (changed) { saveAccounts(); render(); }
+}
+
+/* ════════════════════════════════════════
+   페이즈 토글
+════════════════════════════════════════ */
+document.getElementById('phase-toggle-btn').addEventListener('click', () => {
+  activePhase = activePhase === 'morning' ? 'evening' : 'morning';
+  localStorage.setItem(PHASE_KEY, activePhase);
+  render();
+});
+
+/* ════════════════════════════════════════
+   전역 키보드 컨트롤
+════════════════════════════════════════ */
+window.addEventListener('keydown', e => {
+  if (e.repeat) return; // 키를 누르고 있어도 한 번만 반응
+
+  if (e.code === 'Space') {
+    e.preventDefault();
+    adjustSelected(1);
+  } else if (e.key === 'Control') {
+    adjustSelected(-1);
+  } else if (e.key === 'Escape') {
+    if (selected.size === 0) return;
+    selected.clear();
+    render();
+  }
+});
+
+buildGrid();
+render();
