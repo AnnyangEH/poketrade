@@ -1,0 +1,74 @@
+.entry-card {
+  position: relative;
+  background: #111827;
+  border: 2px solid #374151;
+  border-radius: 0.75rem;
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.entry-nickname {
+  align-self: flex-start;
+  font-size: .7rem;
+  font-weight: 700;
+  color: #d1d5db;
+  background: #1f2937;
+  border-radius: .35rem;
+  padding: .1rem .4rem;
+  margin-bottom: .4rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-sprite-wrap {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: .35rem;
+}
+.entry-sprite {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.entry-no-guess {
+  font-size: .7rem;
+  color: #6b7280;
+}
+
+.entry-name-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: .3rem;
+  font-size: .75rem;
+  text-align: center;
+}
+.entry-name {
+  font-weight: 700;
+  color: #f3f4f6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 8rem;
+}
+.entry-dex {
+  color: #9ca3af;
+  font-variant-numeric: tabular-nums;
+}
+
+.entry-card.tier-win {
+  border-color: #22c55e;
+  box-shadow: 0 0 12px rgba(34, 197, 94, .55);
+}
+.entry-card.tier-close {
+  border-color: #f97316;
+  box-shadow: 0 0 10px rgba(249, 115, 22, .4);
+}
