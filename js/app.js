@@ -75,41 +75,19 @@ function parseComments(raw) {
   return result;
 }
 
-// 번호 뒤에 남는 꼬리 텍스트가 "번" / "- dc App" / 이모지성 문장부호 정도로만
-// 이루어져 있으면 진짜 응모번호로 판단. 긴 문장이 붙어있으면(예: "200은 가볍게
-// 넘는데 고닉이 아니네 ㅠ") 응모가 아니라 잡담으로 보고 버린다.
-function isCleanTail(tail) {
-  let t = tail;
-  t = t.replace(/-\s*dc App/gi, '');
-  t = t.replace(/번/g, '');
-  t = t.replace(/[?!~.,]/g, '');
-  t = t.replace(/ㅎ+/g, '');
-  t = t.replace(/줄/g, '');
-  t = t.replace(/\s+/g, '');
-  return t === '';
-}
-
+// 문맥은 안 따지고 댓글 안에서 처음 발견되는 유효 범위(1~1025) 숫자를 그대로 씀.
+// 애매한 것도 일단 다 넣고, 잘못 잡힌 건 카드의 쓰레기통 버튼으로 직접 지우는
+// 방식으로 처리 (200처럼 잡담에 섞인 숫자나 909처럼 문장에 붙은 숫자도 포함됨)
 function extractDexGuess(contentLines) {
-  let best = null;
-  let bestScore = -Infinity;
-
-  contentLines.forEach(line => {
+  for (const line of contentLines) {
     const re = /(?:^|[^0-9A-Za-z])(\d{1,4})(?![0-9A-Za-z])/g;
     let m;
     while ((m = re.exec(line))) {
       const num = parseInt(m[1], 10);
-      if (num < 1 || num > 1025) continue;
-
-      const tail = line.slice(m.index + m[0].length);
-      if (!isCleanTail(tail)) continue;
-
-      const head = line.slice(0, m.index);
-      const score = -(head.trim().length) - line.length;
-      if (score > bestScore) { bestScore = score; best = num; }
+      if (num >= 1 && num <= 1025) return num;
     }
-  });
-
-  return best;
+  }
+  return null;
 }
 
 /* ════════════════════════════════════════
@@ -163,6 +141,12 @@ function sortedEntries() {
   );
 }
 
+function deleteEntry(order) {
+  entries = entries.filter(e => e._order !== order);
+  saveEntries();
+  render();
+}
+
 /* ════════════════════════════════════════
    렌더링
 ════════════════════════════════════════ */
@@ -171,10 +155,23 @@ function buildCard(entry) {
   const card = document.createElement('div');
   card.className = `entry-card tier-${tier}`;
 
-  const nickEl = document.createElement('div');
+  const header = document.createElement('div');
+  header.className = 'entry-header';
+
+  const nickEl = document.createElement('span');
   nickEl.className = 'entry-nickname';
   nickEl.textContent = entry.nickname;
-  card.appendChild(nickEl);
+  header.appendChild(nickEl);
+
+  const delBtn = document.createElement('button');
+  delBtn.type = 'button';
+  delBtn.className = 'entry-delete-btn';
+  delBtn.title = '삭제';
+  delBtn.textContent = '🗑';
+  delBtn.addEventListener('click', () => deleteEntry(entry._order));
+  header.appendChild(delBtn);
+
+  card.appendChild(header);
 
   const spriteWrap = document.createElement('div');
   spriteWrap.className = 'entry-sprite-wrap';
