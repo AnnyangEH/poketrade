@@ -467,6 +467,23 @@ document.getElementById('parse-btn').addEventListener('click', () => {
   });
 });
 
+document.getElementById('reset-all-btn').addEventListener('click', () => {
+  if (!confirm('정말 모든 데이터를 초기화하시겠습니까?\n당첨번호와 파싱된 댓글이 전부 지워지고 되돌릴 수 없습니다.')) return;
+
+  winningNumbers = [];
+  entries = [];
+  saveWinners();
+  saveEntries();
+
+  ['win-1', 'win-2', 'win-3'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('paste-area').value = '';
+  document.getElementById('parse-summary').textContent = '';
+
+  updateSettingsVisibility();
+  renderWinnerRefs();
+  render();
+});
+
 /* ════════════════════════════════════════
    초기 렌더 — 새로고침해도 이전 상태 유지
 ════════════════════════════════════════ */
