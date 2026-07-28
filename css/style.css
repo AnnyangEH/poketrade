@@ -118,3 +118,39 @@
   letter-spacing: .03em;
   margin-bottom: .3rem;
 }
+
+/* 도넛 차트 */
+.chart-slice {
+  cursor: pointer;
+  transition: opacity .1s ease;
+}
+.chart-slice:hover,
+.chart-slice:focus {
+  opacity: .8;
+}
+
+.chart-legend-row {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .1rem 0;
+}
+.chart-legend-swatch {
+  width: .6rem;
+  height: .6rem;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.chart-legend-label {
+  flex: 1;
+  min-width: 0;
+  color: #d1d5db;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chart-legend-count {
+  color: #9ca3af;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}

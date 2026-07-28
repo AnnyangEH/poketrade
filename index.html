@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>도감번호 추첨 트래커</title>
+  <title>도감번호 추첨기</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -11,8 +11,7 @@
 
   <div class="max-w-6xl mx-auto px-4 py-6 space-y-5">
     <header>
-      <h1 class="text-xl font-bold tracking-tight">도감번호 추첨 트래커</h1>
-      <p class="text-xs text-gray-500 mt-1">초록 = 당첨(정확히 일치) · 주황 = 아까움(±5 이내)</p>
+      <h1 class="text-xl font-bold tracking-tight">도감번호 추첨기</h1>
     </header>
 
     <div id="settings-panel" class="bg-gray-900 rounded-xl p-4 space-y-3">
@@ -39,6 +38,21 @@
         <p id="parse-summary" class="text-xs text-gray-400"></p>
       </div>
     </div>
+
+    <div id="chart-card" class="hidden bg-gray-900 rounded-xl p-4">
+      <p class="text-sm font-bold mb-3">가장 많이 나온 번호</p>
+      <div class="flex flex-col sm:flex-row items-center gap-4">
+        <div class="relative w-48 h-48 flex-shrink-0">
+          <svg id="chart-svg" viewBox="0 0 200 200" class="w-full h-full"></svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span id="chart-total" class="text-xl font-extrabold"></span>
+            <span class="text-[10px] text-gray-500">응모</span>
+          </div>
+        </div>
+        <div id="chart-legend" class="flex-1 w-full grid grid-cols-2 sm:grid-cols-1 gap-x-3 gap-y-1 text-xs"></div>
+      </div>
+    </div>
+    <div id="chart-tooltip" class="hidden fixed z-50 bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs pointer-events-none"></div>
 
     <div id="entry-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2"></div>
     <p id="entry-empty" class="text-center text-gray-500 py-10 text-sm">아직 파싱된 댓글이 없습니다.</p>

@@ -119,9 +119,13 @@ async function fetchNames(dexIds) {
   missing.forEach(id => { if (!(id in nameCache)) nameCache[id] = `#${id}`; });
 }
 
-const POKEMINERS_BASE = 'https://raw.githubusercontent.com/PokeMiners/pogo_assets/master/Images/Pokemon/Addressable Assets';
+// PokeMiners(포켓몬GO 전용 아이콘)는 아직 GO에 없는 포켓몬(예: #1025)이나
+// 특수 폼 네이밍(예: #670 플라엣테)에서 이미지가 아예 없는 경우가 있고
+// 스프라이트마다 여백 비율도 제각각이라, 1~1025 전종을 항상 커버하고
+// 캔버스 비율도 일관된 PokeAPI 공식 아트워크를 씀
+const ARTWORK_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork';
 function spriteUrl(dexId) {
-  return `${encodeURI(POKEMINERS_BASE)}/pm${dexId}.icon.png`;
+  return `${ARTWORK_BASE}/${dexId}.png`;
 }
 
 /* ════════════════════════════════════════
@@ -220,6 +224,8 @@ function buildCard(entry, contested) {
 }
 
 function render() {
+  renderChart();
+
   const grid  = document.getElementById('entry-grid');
   const empty = document.getElementById('entry-empty');
   grid.innerHTML = '';
@@ -234,6 +240,134 @@ function render() {
   sortedEntries().forEach(entry => {
     const contested = winningNumbers.includes(entry.dexId) && counts[entry.dexId] > 1;
     grid.appendChild(buildCard(entry, contested));
+  });
+}
+
+/* ════════════════════════════════════════
+   가장 많이 나온 번호 도넛 차트
+   상위 7개 + 나머지는 "기타"로 묶음. 색은 고정 순서 카테고리컬 팔레트.
+════════════════════════════════════════ */
+const CHART_HUES = ['#3987e5', '#d95926', '#199e70', '#c98500', '#d55181', '#008300', '#9085e9'];
+const CHART_OTHER_COLOR = '#6b7280';
+const CHART_TOP_N = 7;
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function computeChartSlices() {
+  const counts = {};
+  entries.forEach(e => { counts[e.dexId] = (counts[e.dexId] || 0) + 1; });
+
+  const sorted = Object.entries(counts)
+    .map(([dexId, count]) => ({ dexId: Number(dexId), count }))
+    .sort((a, b) => b.count - a.count || a.dexId - b.dexId);
+
+  const top  = sorted.slice(0, CHART_TOP_N);
+  const rest = sorted.slice(CHART_TOP_N);
+  const otherCount = rest.reduce((sum, s) => sum + s.count, 0);
+
+  const slices = top.map((s, i) => ({
+    dexId: s.dexId,
+    count: s.count,
+    color: CHART_HUES[i],
+    label: nameCache[s.dexId] ? `${nameCache[s.dexId]} #${s.dexId}` : `#${s.dexId}`
+  }));
+  if (otherCount > 0) {
+    slices.push({ dexId: null, count: otherCount, color: CHART_OTHER_COLOR, label: `기타 (${rest.length}종)` });
+  }
+  return slices;
+}
+
+function polarToCartesian(cx, cy, r, angleDeg) {
+  const rad = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function donutSlicePath(cx, cy, outerR, innerR, startAngle, endAngle) {
+  const clampedEnd = Math.min(endAngle, startAngle + 359.999); // 100% 단일 슬라이스 대비
+  const startOuter = polarToCartesian(cx, cy, outerR, clampedEnd);
+  const endOuter    = polarToCartesian(cx, cy, outerR, startAngle);
+  const startInner  = polarToCartesian(cx, cy, innerR, startAngle);
+  const endInner    = polarToCartesian(cx, cy, innerR, clampedEnd);
+  const largeArc = clampedEnd - startAngle > 180 ? 1 : 0;
+  return [
+    'M', startOuter.x, startOuter.y,
+    'A', outerR, outerR, 0, largeArc, 0, endOuter.x, endOuter.y,
+    'L', startInner.x, startInner.y,
+    'A', innerR, innerR, 0, largeArc, 1, endInner.x, endInner.y,
+    'Z'
+  ].join(' ');
+}
+
+function showChartTooltip(e, slice, total) {
+  const tooltip = document.getElementById('chart-tooltip');
+  const pct = ((slice.count / total) * 100).toFixed(1);
+  tooltip.innerHTML = '';
+
+  const valueEl = document.createElement('div');
+  valueEl.className = 'font-bold text-gray-100';
+  valueEl.textContent = `${slice.count}명 (${pct}%)`;
+
+  const labelEl = document.createElement('div');
+  labelEl.className = 'text-gray-400';
+  labelEl.textContent = slice.label;
+
+  tooltip.append(valueEl, labelEl);
+  tooltip.style.left = `${e.clientX + 14}px`;
+  tooltip.style.top = `${e.clientY + 14}px`;
+  tooltip.classList.remove('hidden');
+}
+function hideChartTooltip() {
+  document.getElementById('chart-tooltip').classList.add('hidden');
+}
+
+function renderChart() {
+  const chartCard = document.getElementById('chart-card');
+  const svg       = document.getElementById('chart-svg');
+  const legend    = document.getElementById('chart-legend');
+  const totalEl   = document.getElementById('chart-total');
+
+  const total = entries.length;
+  if (total === 0) {
+    chartCard.classList.add('hidden');
+    return;
+  }
+  chartCard.classList.remove('hidden');
+  totalEl.textContent = total;
+
+  svg.innerHTML = '';
+  legend.innerHTML = '';
+
+  const slices = computeChartSlices();
+  let angle = 0;
+
+  slices.forEach(slice => {
+    const sweep = (slice.count / total) * 360;
+
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', donutSlicePath(100, 100, 90, 55, angle, angle + sweep));
+    path.setAttribute('fill', slice.color);
+    path.setAttribute('stroke', '#111827');
+    path.setAttribute('stroke-width', '2');
+    path.classList.add('chart-slice');
+    path.addEventListener('pointermove', e => showChartTooltip(e, slice, total));
+    path.addEventListener('pointerenter', e => showChartTooltip(e, slice, total));
+    path.addEventListener('pointerleave', hideChartTooltip);
+    svg.appendChild(path);
+
+    angle += sweep;
+
+    const row = document.createElement('div');
+    row.className = 'chart-legend-row';
+    const swatch = document.createElement('span');
+    swatch.className = 'chart-legend-swatch';
+    swatch.style.background = slice.color;
+    const label = document.createElement('span');
+    label.className = 'chart-legend-label';
+    label.textContent = slice.label;
+    const countEl = document.createElement('span');
+    countEl.className = 'chart-legend-count';
+    countEl.textContent = String(slice.count);
+    row.append(swatch, label, countEl);
+    legend.appendChild(row);
   });
 }
 
@@ -327,6 +461,10 @@ document.getElementById('parse-btn').addEventListener('click', () => {
 
   render();
   fetchNames(entries.map(e => e.dexId)).then(render);
+
+  requestAnimationFrame(() => {
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+  });
 });
 
 /* ════════════════════════════════════════
