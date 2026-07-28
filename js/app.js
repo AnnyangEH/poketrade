@@ -449,6 +449,25 @@ document.getElementById('edit-winners-btn').addEventListener('click', () => {
   document.getElementById('settings-collapsed').classList.remove('flex');
 });
 
+/* ════════════════════════════════════════
+   붙여넣기 패널 — 파싱 완료하면 접히고, "다시 붙여넣기"로 다시 펼침
+════════════════════════════════════════ */
+function updatePasteVisibility() {
+  const panel     = document.getElementById('paste-panel');
+  const collapsed = document.getElementById('paste-collapsed');
+  const hasEntries = entries.length > 0;
+
+  panel.classList.toggle('hidden', hasEntries);
+  collapsed.classList.toggle('hidden', !hasEntries);
+  collapsed.classList.toggle('flex', hasEntries);
+}
+
+document.getElementById('edit-paste-btn').addEventListener('click', () => {
+  document.getElementById('paste-panel').classList.remove('hidden');
+  document.getElementById('paste-collapsed').classList.add('hidden');
+  document.getElementById('paste-collapsed').classList.remove('flex');
+});
+
 document.getElementById('parse-btn').addEventListener('click', () => {
   const raw = document.getElementById('paste-area').value;
   const parsed = parseComments(raw);
@@ -459,6 +478,7 @@ document.getElementById('parse-btn').addEventListener('click', () => {
   document.getElementById('parse-summary').textContent =
     `${parsed.length}개 댓글 중 번호 인식 ${matched.length}개 표시 (숫자 없는 댓글 ${parsed.length - matched.length}개 제외)`;
 
+  updatePasteVisibility();
   render();
   fetchNames(entries.map(e => e.dexId)).then(render);
 
@@ -480,6 +500,7 @@ document.getElementById('reset-all-btn').addEventListener('click', () => {
   document.getElementById('parse-summary').textContent = '';
 
   updateSettingsVisibility();
+  updatePasteVisibility();
   renderWinnerRefs();
   render();
 });
@@ -488,6 +509,7 @@ document.getElementById('reset-all-btn').addEventListener('click', () => {
    초기 렌더 — 새로고침해도 이전 상태 유지
 ════════════════════════════════════════ */
 updateSettingsVisibility();
+updatePasteVisibility();
 renderWinnerRefs();
 render();
 

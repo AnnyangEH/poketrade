@@ -31,13 +31,17 @@
 
     <div id="winner-ref-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-2"></div>
 
-    <div class="bg-gray-900 rounded-xl p-4 space-y-3">
+    <div id="paste-panel" class="bg-gray-900 rounded-xl p-4 space-y-3">
       <p class="text-sm font-bold">댓글 붙여넣기</p>
       <textarea id="paste-area" rows="6" class="w-full bg-gray-800 rounded-lg px-3 py-2 text-xs font-mono" placeholder="디시 댓글 영역을 통째로 복사해서 여기 붙여넣으세요"></textarea>
       <div class="flex items-center gap-3">
         <button id="parse-btn" class="bg-green-600 hover:bg-green-500 rounded-lg px-4 py-1.5 text-sm font-bold">파싱하기</button>
         <p id="parse-summary" class="text-xs text-gray-400"></p>
       </div>
+    </div>
+    <div id="paste-collapsed" class="hidden items-center gap-2 text-xs text-gray-400">
+      <span>댓글 파싱 완료</span>
+      <button id="edit-paste-btn" class="text-blue-400 hover:text-blue-300 font-semibold">다시 붙여넣기</button>
     </div>
 
     <div id="chart-card" class="hidden bg-gray-900 rounded-xl p-4">
