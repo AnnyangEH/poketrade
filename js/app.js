@@ -2,6 +2,7 @@
    도감번호 추첨 트래커
    디시 댓글을 붙여넣으면 파싱해서 닉네임+응모번호 카드로 표시.
    당첨(정확 일치)=초록, 아까움(±5 이내)=주황, 그 외=기본.
+   같은 당첨번호를 여러 명이 맞히면(교착) 회색/반투명으로 비활성화 표시.
    전부 로컬 저장(localStorage), 로그인/서버 없음.
 ════════════════════════════════════════ */
 
@@ -124,7 +125,7 @@ function spriteUrl(dexId) {
 }
 
 /* ════════════════════════════════════════
-   당첨/아까움 판정 + 정렬
+   당첨/아까움 판정 + 정렬 + 교착(중복 당첨) 판정
 ════════════════════════════════════════ */
 function tierFor(dexId) {
   if (dexId == null || winningNumbers.length === 0) return 'none';
@@ -141,6 +142,16 @@ function sortedEntries() {
   );
 }
 
+// 같은 당첨번호를 두 명 이상이 맞히면 랜덤 추첨으로 정해야 해서(교착),
+// 해결(한 명만 남기고 지우기) 전까지는 흐리게 표시
+function winCounts() {
+  const counts = {};
+  entries.forEach(e => {
+    if (winningNumbers.includes(e.dexId)) counts[e.dexId] = (counts[e.dexId] || 0) + 1;
+  });
+  return counts;
+}
+
 function deleteEntry(order) {
   entries = entries.filter(e => e._order !== order);
   saveEntries();
@@ -150,10 +161,11 @@ function deleteEntry(order) {
 /* ════════════════════════════════════════
    렌더링
 ════════════════════════════════════════ */
-function buildCard(entry) {
+function buildCard(entry, contested) {
   const tier = tierFor(entry.dexId);
   const card = document.createElement('div');
-  card.className = `entry-card tier-${tier}`;
+  card.className = `entry-card tier-${tier}${contested ? ' contested' : ''}`;
+  card.title = '클릭하면 원본 댓글 보기';
 
   const header = document.createElement('div');
   header.className = 'entry-header';
@@ -168,43 +180,41 @@ function buildCard(entry) {
   delBtn.className = 'entry-delete-btn';
   delBtn.title = '삭제';
   delBtn.textContent = '🗑';
-  delBtn.addEventListener('click', () => deleteEntry(entry._order));
+  delBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    deleteEntry(entry._order);
+  });
   header.appendChild(delBtn);
 
   card.appendChild(header);
 
   const spriteWrap = document.createElement('div');
   spriteWrap.className = 'entry-sprite-wrap';
-  if (entry.dexId != null) {
-    const img = document.createElement('img');
-    img.src = spriteUrl(entry.dexId);
-    img.alt = `#${entry.dexId}`;
-    img.className = 'entry-sprite';
-    img.onerror = () => { img.style.display = 'none'; };
-    spriteWrap.appendChild(img);
-  } else {
-    const noGuess = document.createElement('span');
-    noGuess.className = 'entry-no-guess';
-    noGuess.textContent = '번호 없음';
-    spriteWrap.appendChild(noGuess);
-  }
+  const img = document.createElement('img');
+  img.src = spriteUrl(entry.dexId);
+  img.alt = `#${entry.dexId}`;
+  img.className = 'entry-sprite';
+  img.onerror = () => { img.style.display = 'none'; };
+  spriteWrap.appendChild(img);
   card.appendChild(spriteWrap);
 
-  if (entry.dexId != null) {
-    const nameRow = document.createElement('div');
-    nameRow.className = 'entry-name-row';
+  const nameRow = document.createElement('div');
+  nameRow.className = 'entry-name-row';
 
-    const nameEl = document.createElement('span');
-    nameEl.className = 'entry-name';
-    nameEl.textContent = nameCache[entry.dexId] || '';
+  const nameEl = document.createElement('span');
+  nameEl.className = 'entry-name';
+  nameEl.textContent = nameCache[entry.dexId] || '';
 
-    const dexEl = document.createElement('span');
-    dexEl.className = 'entry-dex';
-    dexEl.textContent = `#${entry.dexId}`;
+  const dexEl = document.createElement('span');
+  dexEl.className = 'entry-dex';
+  dexEl.textContent = `#${entry.dexId}`;
 
-    nameRow.append(nameEl, dexEl);
-    card.appendChild(nameRow);
-  }
+  nameRow.append(nameEl, dexEl);
+  card.appendChild(nameRow);
+
+  card.addEventListener('click', () => {
+    alert(`${entry.nickname}\n\n"${entry.raw}"\n\n${entry.timestamp}`);
+  });
 
   return card;
 }
@@ -220,12 +230,68 @@ function render() {
   }
   empty.classList.add('hidden');
 
-  sortedEntries().forEach(entry => grid.appendChild(buildCard(entry)));
+  const counts = winCounts();
+  sortedEntries().forEach(entry => {
+    const contested = winningNumbers.includes(entry.dexId) && counts[entry.dexId] > 1;
+    grid.appendChild(buildCard(entry, contested));
+  });
 }
 
 /* ════════════════════════════════════════
-   설정 UI 초기화
+   당첨번호 참조 카드 (설정한 번호 자체를 카드로 보여줌)
 ════════════════════════════════════════ */
+function buildWinnerRefCard(dexId) {
+  const card = document.createElement('div');
+  card.className = 'winner-ref-card';
+
+  const label = document.createElement('span');
+  label.className = 'winner-ref-label';
+  label.textContent = '당첨번호';
+  card.appendChild(label);
+
+  const spriteWrap = document.createElement('div');
+  spriteWrap.className = 'entry-sprite-wrap';
+  const img = document.createElement('img');
+  img.src = spriteUrl(dexId);
+  img.alt = `#${dexId}`;
+  img.className = 'entry-sprite';
+  img.onerror = () => { img.style.display = 'none'; };
+  spriteWrap.appendChild(img);
+  card.appendChild(spriteWrap);
+
+  const nameRow = document.createElement('div');
+  nameRow.className = 'entry-name-row';
+  const nameEl = document.createElement('span');
+  nameEl.className = 'entry-name';
+  nameEl.textContent = nameCache[dexId] || '';
+  const dexEl = document.createElement('span');
+  dexEl.className = 'entry-dex';
+  dexEl.textContent = `#${dexId}`;
+  nameRow.append(nameEl, dexEl);
+  card.appendChild(nameRow);
+
+  return card;
+}
+
+function renderWinnerRefs() {
+  const grid = document.getElementById('winner-ref-grid');
+  grid.innerHTML = '';
+  winningNumbers.forEach(dexId => grid.appendChild(buildWinnerRefCard(dexId)));
+}
+
+/* ════════════════════════════════════════
+   설정 패널 — 저장하면 접히고, "수정"으로 다시 펼침
+════════════════════════════════════════ */
+function updateSettingsVisibility() {
+  const panel     = document.getElementById('settings-panel');
+  const collapsed = document.getElementById('settings-collapsed');
+  const hasWinners = winningNumbers.length > 0;
+
+  panel.classList.toggle('hidden', hasWinners);
+  collapsed.classList.toggle('hidden', !hasWinners);
+  collapsed.classList.toggle('flex', hasWinners);
+}
+
 ['win-1', 'win-2', 'win-3'].forEach((id, i) => {
   const el = document.getElementById(id);
   if (winningNumbers[i] != null) el.value = winningNumbers[i];
@@ -237,27 +303,38 @@ document.getElementById('save-winners-btn').addEventListener('click', () => {
     .filter(n => Number.isInteger(n) && n >= 1 && n <= 1025);
   winningNumbers = vals;
   saveWinners();
+  updateSettingsVisibility();
+  renderWinnerRefs();
   render();
+  if (vals.length) fetchNames(vals).then(renderWinnerRefs);
+});
+
+document.getElementById('edit-winners-btn').addEventListener('click', () => {
+  document.getElementById('settings-panel').classList.remove('hidden');
+  document.getElementById('settings-collapsed').classList.add('hidden');
+  document.getElementById('settings-collapsed').classList.remove('flex');
 });
 
 document.getElementById('parse-btn').addEventListener('click', () => {
   const raw = document.getElementById('paste-area').value;
   const parsed = parseComments(raw);
-  entries = parsed.map((e, i) => ({ ...e, _order: i }));
+  const matched = parsed.filter(e => e.dexId != null); // 숫자 없는 댓글은 카드로 안 만듦
+  entries = matched.map((e, i) => ({ ...e, _order: i }));
   saveEntries();
 
-  const matched = entries.filter(e => e.dexId != null).length;
   document.getElementById('parse-summary').textContent =
-    `${entries.length}개 댓글 파싱 완료 (번호 인식 ${matched}개 · 미인식 ${entries.length - matched}개)`;
+    `${parsed.length}개 댓글 중 번호 인식 ${matched.length}개 표시 (숫자 없는 댓글 ${parsed.length - matched.length}개 제외)`;
 
   render();
-  const uniqueIds = entries.filter(e => e.dexId != null).map(e => e.dexId);
-  fetchNames(uniqueIds).then(render);
+  fetchNames(entries.map(e => e.dexId)).then(render);
 });
 
 /* ════════════════════════════════════════
    초기 렌더 — 새로고침해도 이전 상태 유지
 ════════════════════════════════════════ */
+updateSettingsVisibility();
+renderWinnerRefs();
 render();
-const initialIds = entries.filter(e => e.dexId != null).map(e => e.dexId);
-if (initialIds.length) fetchNames(initialIds).then(render);
+
+const initialIds = [...new Set([...entries.map(e => e.dexId), ...winningNumbers])];
+if (initialIds.length) fetchNames(initialIds).then(() => { renderWinnerRefs(); render(); });
