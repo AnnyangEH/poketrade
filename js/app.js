@@ -42,7 +42,13 @@ function saveEntries() { localStorage.setItem(ENTRIES_KEY, JSON.stringify(entrie
    없어서 자동으로 걸러짐)
 ════════════════════════════════════════ */
 const GALLOG_MARKER = '갤로그로 이동합니다.';
-const TIMESTAMP_RE  = /^\d{2}\.\d{2}\s+\d{2}:\d{2}(:\d{2})?$/;
+// 절대시각("07.25 16:30:17"/"07.25 16:30")과 상대시각("5분 전", "방금 전",
+// "1시간 전", "2일 전") 둘 다 인식 — 디시가 최근 댓글은 상대시각으로 보여주는데
+// 이걸 못 알아채면 다음 댓글들까지 전부 한 블록으로 삼켜버리는 사고가 남
+const TIMESTAMP_RE = /^(\d{2}\.\d{2}\s+\d{2}:\d{2}(:\d{2})?|\d+\s*(초|분|시간|일)\s*전|방금\s*전)$/;
+// 위 정규식이 못 잡는 미지의 타임스탬프 표기를 만나도 한 댓글이 페이지 전체를
+// 삼켜버리는 최악의 상황은 막기 위한 안전장치 — 실제 댓글이 이보다 길 일은 거의 없음
+const MAX_CONTENT_LINES = 15;
 
 function parseComments(raw) {
   const lines = raw.split('\n').map(l => l.trim());
@@ -57,11 +63,11 @@ function parseComments(raw) {
 
     const content = [];
     let j = i + 1;
-    while (j < lines.length && !TIMESTAMP_RE.test(lines[j])) {
+    while (j < lines.length && !TIMESTAMP_RE.test(lines[j]) && content.length < MAX_CONTENT_LINES) {
       if (lines[j] !== '') content.push(lines[j]);
       j++;
     }
-    const timestamp = j < lines.length ? lines[j] : '';
+    const timestamp = j < lines.length && TIMESTAMP_RE.test(lines[j]) ? lines[j] : '';
     const rawText = content.join(' / ');
     const dexIds = extractAllDexGuesses(content);
 
@@ -74,7 +80,7 @@ function parseComments(raw) {
       dexIds.forEach(dexId => result.push({ nickname, dexId, timestamp, raw: rawText }));
     }
 
-    i = j; // 다음 블록 탐색은 타임스탬프 줄 다음부터
+    i = j; // 다음 블록 탐색은 타임스탬프(혹은 안전장치가 끊은 지점) 다음부터
   }
 
   return result;
