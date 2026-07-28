@@ -62,13 +62,17 @@ function parseComments(raw) {
       j++;
     }
     const timestamp = j < lines.length ? lines[j] : '';
+    const rawText = content.join(' / ');
+    const dexIds = extractAllDexGuesses(content);
 
-    result.push({
-      nickname,
-      dexId: extractDexGuess(content),
-      timestamp,
-      raw: content.join(' / ')
-    });
+    if (dexIds.length === 0) {
+      result.push({ nickname, dexId: null, timestamp, raw: rawText });
+    } else {
+      // 댓글 하나에 유효 번호가 여러 개 있으면(예: "나 200 안되는데 그래도 909")
+      // 어떤 게 진짜 응모인지 문맥만으론 못 가려서, 번호별로 카드를 따로 만들고
+      // 사람이 원문(raw) 보고 틀린 쪽을 쓰레기통으로 지우게 함
+      dexIds.forEach(dexId => result.push({ nickname, dexId, timestamp, raw: rawText }));
+    }
 
     i = j; // 다음 블록 탐색은 타임스탬프 줄 다음부터
   }
@@ -76,19 +80,24 @@ function parseComments(raw) {
   return result;
 }
 
-// 문맥은 안 따지고 댓글 안에서 처음 발견되는 유효 범위(1~1025) 숫자를 그대로 씀.
-// 애매한 것도 일단 다 넣고, 잘못 잡힌 건 카드의 쓰레기통 버튼으로 직접 지우는
-// 방식으로 처리 (200처럼 잡담에 섞인 숫자나 909처럼 문장에 붙은 숫자도 포함됨)
-function extractDexGuess(contentLines) {
-  for (const line of contentLines) {
+// 문맥은 안 따지고 댓글에서 발견되는 유효 범위(1~1025) 숫자를 전부(중복 제외) 반환.
+// 어떤 게 "진짜" 응모인지는 가리지 않고 다 카드로 만들어서, 잘못 잡힌 건
+// 사람이 쓰레기통 버튼으로 직접 지우는 방식으로 처리
+function extractAllDexGuesses(contentLines) {
+  const found = [];
+  const seen = new Set();
+  contentLines.forEach(line => {
     const re = /(?:^|[^0-9A-Za-z])(\d{1,4})(?![0-9A-Za-z])/g;
     let m;
     while ((m = re.exec(line))) {
       const num = parseInt(m[1], 10);
-      if (num >= 1 && num <= 1025) return num;
+      if (num >= 1 && num <= 1025 && !seen.has(num)) {
+        seen.add(num);
+        found.push(num);
+      }
     }
-  }
-  return null;
+  });
+  return found;
 }
 
 /* ════════════════════════════════════════
