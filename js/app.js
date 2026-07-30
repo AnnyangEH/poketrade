@@ -434,14 +434,34 @@ function updateSettingsVisibility() {
   collapsed.classList.toggle('flex', hasWinners);
 }
 
-['win-1', 'win-2', 'win-3'].forEach((id, i) => {
-  const el = document.getElementById(id);
-  if (winningNumbers[i] != null) el.value = winningNumbers[i];
+// 당첨번호 입력칸 — 기본 1개, "+" 버튼으로 계속 늘릴 수 있음
+function createWinnerInput(value) {
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '1';
+  input.max = '1025';
+  input.className = 'winner-input w-24 bg-gray-800 rounded-lg px-2 py-1.5 text-sm text-center';
+  input.placeholder = '예: 151';
+  if (value != null) input.value = value;
+  return input;
+}
+
+function renderWinnerInputs() {
+  const container = document.getElementById('winner-inputs');
+  container.innerHTML = '';
+  const values = winningNumbers.length ? winningNumbers : [null];
+  values.forEach(v => container.appendChild(createWinnerInput(v)));
+}
+
+renderWinnerInputs();
+
+document.getElementById('add-winner-btn').addEventListener('click', () => {
+  document.getElementById('winner-inputs').appendChild(createWinnerInput(null));
 });
 
 document.getElementById('save-winners-btn').addEventListener('click', () => {
-  const vals = ['win-1', 'win-2', 'win-3']
-    .map(id => parseInt(document.getElementById(id).value, 10))
+  const vals = [...document.querySelectorAll('.winner-input')]
+    .map(el => parseInt(el.value, 10))
     .filter(n => Number.isInteger(n) && n >= 1 && n <= 1025);
   winningNumbers = vals;
   saveWinners();
@@ -503,7 +523,7 @@ document.getElementById('reset-all-btn').addEventListener('click', () => {
   saveWinners();
   saveEntries();
 
-  ['win-1', 'win-2', 'win-3'].forEach(id => { document.getElementById(id).value = ''; });
+  renderWinnerInputs();
   document.getElementById('paste-area').value = '';
   document.getElementById('parse-summary').textContent = '';
 
