@@ -139,19 +139,30 @@ function spriteUrl(dexId) {
 /* ════════════════════════════════════════
    당첨/아까움 판정 + 정렬 + 교착(중복 당첨) 판정
 ════════════════════════════════════════ */
+function distanceToWinner(dexId) {
+  if (dexId == null || winningNumbers.length === 0) return Infinity;
+  return Math.min(...winningNumbers.map(w => Math.abs(w - dexId)));
+}
+
 function tierFor(dexId) {
   if (dexId == null || winningNumbers.length === 0) return 'none';
   if (winningNumbers.includes(dexId)) return 'win';
-  const minDist = Math.min(...winningNumbers.map(w => Math.abs(w - dexId)));
-  return minDist <= NEAR_MISS_RANGE ? 'close' : 'none';
+  return distanceToWinner(dexId) <= NEAR_MISS_RANGE ? 'close' : 'none';
 }
 
-const TIER_RANK = { win: 0, close: 1, none: 2 };
-
+// 정답자는 맨 위, 나머지는 당첨번호와의 거리가 가까운 순으로 정렬
+// (예: 당첨번호 1025면 1021 → 1019 → 1000 → 998 순)
 function sortedEntries() {
-  return [...entries].sort((a, b) =>
-    TIER_RANK[tierFor(a.dexId)] - TIER_RANK[tierFor(b.dexId)] || a._order - b._order
-  );
+  return [...entries].sort((a, b) => {
+    const aWin = winningNumbers.includes(a.dexId);
+    const bWin = winningNumbers.includes(b.dexId);
+    if (aWin !== bWin) return aWin ? -1 : 1;
+    if (!aWin) {
+      const distDiff = distanceToWinner(a.dexId) - distanceToWinner(b.dexId);
+      if (distDiff !== 0) return distDiff;
+    }
+    return a._order - b._order;
+  });
 }
 
 // 같은 당첨번호를 두 명 이상이 맞히면 랜덤 추첨으로 정해야 해서(교착),
