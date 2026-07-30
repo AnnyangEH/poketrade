@@ -85,21 +85,11 @@ function parseComments(raw) {
 }
 
 // 이번 회차 규칙은 응모번호를 괄호로 표기(예: "(151)")하게 되어 있어서,
-// 괄호 안 숫자를 최우선으로 찾는다. 괄호 표기를 안 지킨 댓글도 있을 수 있으니
-// 그런 경우엔 기존 방식(문맥 안 따지고 처음 나오는 유효 범위 숫자)으로 폴백.
-// 애매한 것도 일단 다 넣고, 잘못 잡힌 건 카드의 쓰레기통 버튼으로 직접 지우는
-// 방식으로 처리 (200처럼 잡담에 섞인 숫자나 909처럼 문장에 붙은 숫자도 포함됨)
+// 괄호 안 숫자만 응모로 인정한다. 괄호 표기를 안 지킨 사람은 규칙을 안 지킨
+// 거니 잡담 댓글과 동일하게 취급해서 카드 자체를 안 만듦(dexId null → 제외)
 function extractDexGuess(contentLines) {
   for (const line of contentLines) {
     const re = /\((\d{1,4})\)/g;
-    let m;
-    while ((m = re.exec(line))) {
-      const num = parseInt(m[1], 10);
-      if (num >= 1 && num <= 1025) return num;
-    }
-  }
-  for (const line of contentLines) {
-    const re = /(?:^|[^0-9A-Za-z])(\d{1,4})(?![0-9A-Za-z])/g;
     let m;
     while ((m = re.exec(line))) {
       const num = parseInt(m[1], 10);
